@@ -37,7 +37,9 @@ fi
 cd "$SCRIPT_DIR"
 
 if [ -n "$SUDO_PASS" ]; then
-    echo "$SUDO_PASS" | sudo -S --preserve-env=DISPLAY,XAUTHORITY "$BIN" "$@"
+    xhost +si:localuser:root >/dev/null 2>&1 || true
+    echo "$SUDO_PASS" | sudo -S --preserve-env=DISPLAY,XAUTHORITY,WAYLAND_DISPLAY,XDG_RUNTIME_DIR env GDK_BACKEND=x11 "$BIN" "$@"
 else
-    sudo --preserve-env=DISPLAY,XAUTHORITY "$BIN" "$@"
+    xhost +si:localuser:root >/dev/null 2>&1 || true
+    sudo --preserve-env=DISPLAY,XAUTHORITY,WAYLAND_DISPLAY,XDG_RUNTIME_DIR env GDK_BACKEND=x11 "$BIN" "$@"
 fi
