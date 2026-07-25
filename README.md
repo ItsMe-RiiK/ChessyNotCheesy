@@ -6,7 +6,7 @@
 
 **ChessyNotCheesy** is a highly optimized, fully autonomous computer-vision based chess bot designed to play on Chess.com directly from your Linux desktop, powered by the **Stockfish** engine.
 
-Unlike traditional chess bots or browser extensions that inject JavaScript, read browser memory, or hook into the DOM, **ChessyNotCheesy operates entirely outside the browser**. It acts exactly like a human player: it "looks" at your screen using X11 screen capture and "clicks" the mouse using hardware-level input simulation (`XTest`).
+Unlike traditional chess bots or browser extensions that inject JavaScript, read browser memory, or hook into the DOM, **ChessyNotCheesy operates entirely outside the browser**. It acts exactly like a human player: it "looks" at your screen using native screen capture (`XShm` or `grim`) and "clicks" the mouse using hardware-level input simulation (a `/dev/uinput` virtual tablet driver).
 
 ---
 
@@ -23,8 +23,9 @@ Unlike traditional chess bots or browser extensions that inject JavaScript, read
 ## ✨ Features
 
 - **100% External Vision System**: Uses OpenCV `TM_SQDIFF_NORMED` template matching to read the board visually. Completely immune to board highlights, last-move indicators, and square colors.
-- **CPU Efficient**: Built on lightweight `X11` screen capture and native C++ processing.
-- **Human-like Interaction**: Uses `XTestFakeMotionEvent` and `XTestFakeButtonEvent` to simulate realistic mouse movements and hardware clicks.
+- **Universal Linux Support**: Fully supports both **X11** and **Wayland** display servers dynamically out-of-the-box!
+- **CPU Efficient**: Built on lightweight native APIs (`XShm` on X11, `grim` on Wayland) and heavily optimized C++ OpenCV processing.
+- **Human-like Interaction**: Uses a custom `/dev/uinput` absolute pointer device to simulate realistic, hardware-level mouse movements and clicks.
 - **Built-in GTK3 GUI**:
   - Real-time PGN generation and tracking.
   - Live engine evaluation (e.g., `eval: +1.20`).
@@ -40,8 +41,7 @@ Unlike traditional chess bots or browser extensions that inject JavaScript, read
 <summary><b>Requirements</b></summary>
 
 ### 🖥️ Requirements
-This project is built exclusively for Linux and is specifically tested on **Arch Linux / X11**. 
-*(Note: It will not work out-of-the-box on Wayland due to its reliance on the X11 and XTest APIs).*
+This project is built exclusively for Linux and is fully tested on both **Arch Linux / X11** and **Arch Linux / Wayland (e.g. labwc, sway, hyprland)**. 
 </details>
 
 <details>
@@ -55,13 +55,14 @@ To compile and run this project, the following packages must be installed:
 - `opencv` (libopencv-dev, specifically OpenCV 5 or compatible)
 - `gtk3`
 - `x11` and `xtst` (libxtst-dev)
+- `grim` and `slurp` (Required for Wayland screen capture and calibration)
 
 **Automated Installation (Arch Linux Only):**
 An automated script is provided to install all necessary dependencies and system permissions:
 ```bash
 ./scripts/install.sh
 ```
-*(If you are on Debian/Ubuntu or Fedora, you must manually install the equivalent packages (`build-essential`, `libopencv-dev`, `libxtst-dev`, etc) and create your own udev rules).*
+*(If you are on Debian/Ubuntu or Fedora, you must manually install the equivalent packages (`build-essential`, `libopencv-dev`, `libxtst-dev`, `grim`, `slurp`, etc) and create your own udev rules).*
 </details>
 
 ---
@@ -129,8 +130,8 @@ We provide convenient scripts to manage your installation (bundled in the root f
 
 2. **Calibrate**:
    - In the GUI, click `(C)alibrate` or press the `C` hotkey.
-   - Click exactly on the **Top-Left corner** of the board (the top-left edge of the `a8` square).
-   - Click exactly on the **Bottom-Right corner** of the board (the bottom-right edge of the `h1` square).
+   - **On X11**: Click exactly on the **Top-Left corner** of the board (the top-left edge of the `a8` square), then click the **Bottom-Right corner** (the bottom-right edge of the `h1` square).
+   - **On Wayland**: Your screen will freeze. Click and drag a selection box perfectly over the entire chessboard to select the region.
    - The bot will automatically calculate square sizes and lock its vision onto the board.
 
 3. **Play**:
