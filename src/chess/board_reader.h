@@ -81,6 +81,14 @@ private:
   cv::Mat prev_screen_;
   Board   prev_board_;
 
+  struct PrecomputedTemplate
+  {
+    cv::Mat templ_blur;
+    cv::Mat search_mask_3c;
+  };
+  std::map<int, PrecomputedTemplate> precomputed_;
+  int                                cached_square_size_ = 0;
+
   // OpenCV helper for converting ScreenCapture BGRA buffer to cv::Mat
   cv::Mat capture_to_mat();
 };

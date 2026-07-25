@@ -183,17 +183,33 @@ static void on_toggle(GtkWidget* widget, gpointer data)
   bot_active  = active;
 
   if (active) {
-    gtk_button_set_label(GTK_BUTTON(widget), "⏹ Stop Bot (Key: `)");
+    gtk_button_set_label(GTK_BUTTON(widget), "[STOP] Stop Bot (Key: `)");
     bot.start();
   }
   else {
-    gtk_button_set_label(GTK_BUTTON(widget), "▶ Start Bot (Key: `)");
+    gtk_button_set_label(GTK_BUTTON(widget), "[START] Start Bot (Key: `)");
     bot.stop();
   }
 }
 
 static void on_calibrate_clicked(GtkWidget* widget, gpointer data)
 {
+  if (getenv("WAYLAND_DISPLAY")) {
+    bot.set_status("Drag a box over the chessboard using slurp...");
+    FILE* f = popen("slurp", "r");
+    if (f) {
+      char buf[256];
+      if (fgets(buf, sizeof(buf), f)) {
+        int x, y, w, h;
+        if (sscanf(buf, "%d,%d %dx%d", &x, &y, &w, &h) == 4) {
+          bot.calibrate(x, y, x + w, y + h);
+        }
+      }
+      pclose(f);
+    }
+    return;
+  }
+
   if (calib_state == 0) {
     calib_state = 1;
     if (calibrate_btn)
@@ -402,7 +418,7 @@ static void input_listener_thread()
                 // Reset calibrate button label
                 g_idle_add(
                   +[](gpointer data) -> gboolean {
-                    gtk_button_set_label(GTK_BUTTON(calibrate_btn), "🎯 (C)alibrate Board");
+                    gtk_button_set_label(GTK_BUTTON(calibrate_btn), "(C)alibrate Board");
                     return G_SOURCE_REMOVE;
                   },
                   NULL
@@ -434,27 +450,27 @@ static void apply_css(GtkWidget* widget)
                     "label {"
                     "  color: #cdd6f4;"
                     "  font-family: 'Inter', 'Segoe UI', sans-serif;"
-                    "  font-size: 13px;"
+                    "  font-size: 16px;"
                     "}"
                     "label.title {"
-                    "  font-size: 20px;"
+                    "  font-size: 24px;"
                     "  font-weight: 800;"
                     "  color: #89b4fa;"
                     "}"
                     "label.section {"
-                    "  font-size: 14px;"
+                    "  font-size: 18px;"
                     "  font-weight: 700;"
                     "  color: #cba6f7;"
                     "  margin-top: 8px;"
                     "  margin-bottom: 4px;"
                     "}"
                     "label.status {"
-                    "  font-size: 13px;"
+                    "  font-size: 16px;"
                     "  color: #a6e3a1;"
                     "  font-weight: 600;"
                     "}"
                     "label.mono {"
-                    "  font-size: 11px;"
+                    "  font-size: 14px;"
                     "  color: #6c7086;"
                     "  font-family: 'JetBrains Mono', 'Fira Code', monospace;"
                     "}"
@@ -465,6 +481,7 @@ static void apply_css(GtkWidget* widget)
                     "  border-radius: 8px;"
                     "  padding: 10px 16px;"
                     "  font-family: 'Inter', sans-serif;"
+                    "  font-size: 16px;"
                     "  font-weight: 600;"
                     "  box-shadow: 0 2px 4px rgba(0,0,0,0.2);"
                     "  transition: all 0.2s ease-in-out;"
@@ -608,11 +625,11 @@ static void activate(GtkApplication* app, gpointer user_data)
   gtk_box_pack_start(GTK_BOX(vbox), gtk_separator_new(GTK_ORIENTATION_HORIZONTAL), FALSE, FALSE, 4);
 
   // Calibration ──
-  calibrate_btn = gtk_button_new_with_label("🎯 (C)alibrate");
+  calibrate_btn = gtk_button_new_with_label("(C)alibrate");
   g_signal_connect(calibrate_btn, "clicked", G_CALLBACK(on_calibrate_clicked), NULL);
   gtk_box_pack_start(GTK_BOX(vbox), calibrate_btn, FALSE, FALSE, 0);
 
-  GtkWidget* reset_btn = gtk_button_new_with_label("🔄 (R)eset Game");
+  GtkWidget* reset_btn = gtk_button_new_with_label("(R)eset Game");
   g_signal_connect(
     reset_btn, "clicked",
     G_CALLBACK(+[](GtkWidget* widget, gpointer data) { g_idle_add(reset_game_idle, NULL); }), NULL
@@ -644,7 +661,7 @@ static void activate(GtkApplication* app, gpointer user_data)
   gtk_box_pack_start(GTK_BOX(depth_hbox), create_label("Depth:", NULL), FALSE, FALSE, 0);
 
   //                                           depth, min, max, step, page_size, page_increment
-  GtkAdjustment* depth_adj = gtk_adjustment_new(4.0, 1.0, 30.0, 1.0, 5.0, 0.0);
+  GtkAdjustment* depth_adj = gtk_adjustment_new(3.0, 1.0, 30.0, 1.0, 5.0, 0.0);
   depth_scale              = gtk_scale_new(GTK_ORIENTATION_HORIZONTAL, depth_adj);
   gtk_scale_set_digits(GTK_SCALE(depth_scale), 0);
   gtk_scale_set_value_pos(GTK_SCALE(depth_scale), GTK_POS_RIGHT);
@@ -729,6 +746,11 @@ static void activate(GtkApplication* app, gpointer user_data)
   pgn_buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(pgn_view));
 
   gtk_widget_show_all(window);
+
+  // Apply always-on-top after the window is realized
+  if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(top_check))) {
+    gtk_window_set_keep_above(GTK_WINDOW(window), TRUE);
+  }
 
   // Set up bot callbacks for GUI updates
   bot.on_status_change = [](const std::string& status) {

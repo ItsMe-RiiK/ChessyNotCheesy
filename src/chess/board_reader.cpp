@@ -104,53 +104,45 @@ Board BoardReader::read_board()
   if (screen.empty())
     return board;
 
-  // Precompute templates to save massive amounts of CPU
-  struct PrecomputedTemplate
-  {
-    cv::Mat templ_blur;
-    cv::Mat search_mask_3c;
-  };
+  if (cached_square_size_ != square_size_) {
+    precomputed_.clear();
+    for (int p = 1; p <= 12; p++) {
+      cv::Mat templ = theme_manager_.get_template(p);
+      cv::Mat mask  = theme_manager_.get_mask(p);
 
-  std::map<int, PrecomputedTemplate> precomputed;
-  for (int p = 1; p <= 12; p++) {
-    cv::Mat templ = theme_manager_.get_template(p);
-    cv::Mat mask  = theme_manager_.get_mask(p);
+      if (templ.empty())
+        continue;
 
-    if (templ.empty())
-      continue;
+      cv::Mat search_templ = templ;
+      cv::Mat search_mask  = mask;
 
-    cv::Mat search_templ = templ;
-    cv::Mat search_mask  = mask;
-
-    if (!search_mask.empty()) {
-      // Aggressive threshold and erosion to eliminate ALL background/shadow bleeding.
-      // This is necessary because Chess.com yellow highlights will bleed into piece edges
-      // and break the TM_SQDIFF_NORMED threshold.
-      cv::threshold(search_mask, search_mask, 240, 255, cv::THRESH_BINARY);
-    }
-
-    if (search_templ.cols != square_size_ || search_templ.rows != square_size_) {
-      cv::resize(
-        search_templ, search_templ, cv::Size(square_size_, square_size_), 0, 0, cv::INTER_LINEAR
-      );
       if (!search_mask.empty()) {
-        cv::resize(
-          search_mask, search_mask, cv::Size(square_size_, square_size_), 0, 0, cv::INTER_NEAREST
-        );
+        cv::threshold(search_mask, search_mask, 240, 255, cv::THRESH_BINARY);
       }
-    }
 
-    if (!search_mask.empty()) {
-      // Erode by 2 pixels to cut off any semi-transparent shadow edges
-      cv::erode(search_mask, search_mask, cv::Mat(), cv::Point(-1, -1), 2);
-    }
+      if (search_templ.cols != square_size_ || search_templ.rows != square_size_) {
+        cv::resize(
+          search_templ, search_templ, cv::Size(square_size_, square_size_), 0, 0, cv::INTER_LINEAR
+        );
+        if (!search_mask.empty()) {
+          cv::resize(
+            search_mask, search_mask, cv::Size(square_size_, square_size_), 0, 0, cv::INTER_NEAREST
+          );
+        }
+      }
 
-    PrecomputedTemplate pt;
-    cv::GaussianBlur(search_templ, pt.templ_blur, cv::Size(3, 3), 0);
-    if (!search_mask.empty()) {
-      cv::cvtColor(search_mask, pt.search_mask_3c, cv::COLOR_GRAY2BGR);
+      if (!search_mask.empty()) {
+        cv::erode(search_mask, search_mask, cv::Mat(), cv::Point(-1, -1), 2);
+      }
+
+      PrecomputedTemplate pt;
+      cv::GaussianBlur(search_templ, pt.templ_blur, cv::Size(3, 3), 0);
+      if (!search_mask.empty()) {
+        cv::cvtColor(search_mask, pt.search_mask_3c, cv::COLOR_GRAY2BGR);
+      }
+      precomputed_[p] = pt;
     }
-    precomputed[p] = pt;
+    cached_square_size_ = square_size_;
   }
 
   // For every square, we crop it and match against all piece templates
@@ -172,7 +164,7 @@ Board BoardReader::read_board()
       roi_h = std::min(roi_h, screen.rows - roi_y);
 
       cv::Rect roi(roi_x, roi_y, roi_w, roi_h);
-      cv::Mat  square = screen(roi).clone();
+      cv::Mat  square = screen(roi);
 
       if (has_prev) {
         cv::Mat diff;
@@ -193,10 +185,10 @@ Board BoardReader::read_board()
       Piece  best_piece = Piece::EMPTY;
 
       for (int p = 1; p <= 12; p++) {
-        if (precomputed.find(p) == precomputed.end())
+        if (precomputed_.find(p) == precomputed_.end())
           continue;
 
-        const PrecomputedTemplate& pt = precomputed[p];
+        const PrecomputedTemplate& pt = precomputed_[p];
 
         if (square_blur.cols < pt.templ_blur.cols || square_blur.rows < pt.templ_blur.rows) {
           continue;
