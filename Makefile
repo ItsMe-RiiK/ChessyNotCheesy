@@ -65,9 +65,9 @@ clean:
 
 run: $(TARGET)
 	@if [ -n "$(SUDO_PASS)" ]; then \
-		echo "$(SUDO_PASS)" | sudo -S --preserve-env=DISPLAY,XAUTHORITY $(TARGET); \
+		echo "$(SUDO_PASS)" | sudo -S --preserve-env=DISPLAY,XAUTHORITY,WAYLAND_DISPLAY,XDG_RUNTIME_DIR env GDK_BACKEND=x11 $(TARGET); \
 	else \
-		sudo --preserve-env=DISPLAY,XAUTHORITY $(TARGET); \
+		sudo --preserve-env=DISPLAY,XAUTHORITY,WAYLAND_DISPLAY,XDG_RUNTIME_DIR env GDK_BACKEND=x11 $(TARGET); \
 	fi
 
 test-stockfish: $(TARGET)
@@ -75,7 +75,7 @@ test-stockfish: $(TARGET)
 
 test-driver: $(TARGET)
 	@if [ -n "$(SUDO_PASS)" ]; then \
-		echo "$(SUDO_PASS)" | sudo -S --preserve-env=DISPLAY,XAUTHORITY $(TARGET) --test-driver; \
+		echo "$(SUDO_PASS)" | sudo -S --preserve-env=DISPLAY,XAUTHORITY,WAYLAND_DISPLAY,XDG_RUNTIME_DIR env GDK_BACKEND=x11 $(TARGET) --test-driver; \
 	else \
-		sudo --preserve-env=DISPLAY,XAUTHORITY $(TARGET) --test-driver; \
+		sudo --preserve-env=DISPLAY,XAUTHORITY,WAYLAND_DISPLAY,XDG_RUNTIME_DIR env GDK_BACKEND=x11 $(TARGET) --test-driver; \
 	fi
