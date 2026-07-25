@@ -6,8 +6,8 @@ tests/
 debug/
 template/
 
-
 *.o
+*.desktop
 
 chesscom.md
 compile_commands.json
