@@ -63,7 +63,7 @@ private:
   BoardReader     board_reader_;
   GameState       game_state_;
   StockfishEngine stockfish_;
-  X11Mouse        mouse_;
+  VirtualMouse    mouse_;
 
   // Bot loop thread
   std::thread       bot_thread_;
