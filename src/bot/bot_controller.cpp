@@ -14,10 +14,10 @@ BotController::BotController() :
     board_reader_(capture_, theme_manager_),
     running_(false),
     should_stop_(false),
-    stockfish_depth_(4),
+    stockfish_depth_(3),
     move_delay_min_ms_(1000),
     move_delay_max_ms_(5000),
-    poll_interval_ms_(50),
+    poll_interval_ms_(100),
     stable_frames_(0)
 {
 }
@@ -39,8 +39,8 @@ bool BotController::init()
   }
 
   // Initialize mouse driver
-  if (!mouse_.open()) {
-    set_status("ERROR: Failed to open /dev/rkkdr_mouse");
+  if (!mouse_.open(capture_.get_screen_width(), capture_.get_screen_height())) {
+    set_status("ERROR: Failed to open virtual pointer (/dev/uinput)");
     return false;
   }
 
@@ -137,6 +137,11 @@ void BotController::calibrate(int tl_x, int tl_y, int br_x, int br_y)
   }
   else {
     theme_manager_.load_piece_theme(p);
+  }
+
+  if (!board_reader_.is_calibrated()) {
+    set_status("ERROR: Calibration failed (board too small or missing).");
+    return;
   }
 
   // Extract initial templates immediately while the board is (presumably) in the starting position!
