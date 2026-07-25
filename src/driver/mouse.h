@@ -1,22 +1,22 @@
 #ifndef CHESSY_NOT_CHEESY_MOUSE_H
 #define CHESSY_NOT_CHEESY_MOUSE_H
 
-#include <X11/Xlib.h>
 #include <cstdint>
 
 /*
- * X11Mouse — Userspace wrapper for X11 mouse injection
+ * VirtualMouse — Kernel-level virtual absolute pointer
  *
- * Provides high-level mouse control (absolute move, click, drag)
- * using the X11 XTest extension.
+ * Uses /dev/uinput to create a virtual tablet device.
+ * This completely bypasses Wayland's pointer isolation and 
+ * works identically on both X11 and Wayland.
  */
-class X11Mouse
+class VirtualMouse
 {
 public:
-  X11Mouse();
-  ~X11Mouse();
+  VirtualMouse();
+  ~VirtualMouse();
 
-  bool open();
+  bool open(int screen_width, int screen_height);
   void close();
 
   // Absolute positioning — move cursor to exact screen coordinate
@@ -38,7 +38,7 @@ public:
   void set_jitter_pixels(int max_jitter);
 
 private:
-  Display* display_;
+  int fd_;
 
   // Human-like timing
   int  click_delay_min_ms_;
@@ -48,6 +48,7 @@ private:
   int  jitter_pixels_;
   int  random_range(int min_val, int max_val);
   void random_delay(int min_ms, int max_ms);
+  void emit(int type, int code, int val);
 };
 
 #endif /* CHESSY_NOT_CHEESY_MOUSE_H */

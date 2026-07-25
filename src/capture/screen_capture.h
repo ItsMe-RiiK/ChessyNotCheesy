@@ -13,14 +13,15 @@
 #undef True
 #undef False
 #include <cstdint>
+#include <string>
 #include <sys/shm.h>
+#include <vector>
 
 /*
- * ScreenCapture — Fast X11 screen capture using XShm (shared memory)
+ * ScreenCapture — Hybrid X11 / Wayland screen capture
  *
- * Captures screen regions at high speed (~1-2ms per frame) by using
- * X11's shared memory extension. This avoids the overhead of
- * XGetImage which copies pixels over the X11 socket.
+ * Captures screen regions at high speed.
+ * Uses XShm for X11 sessions, and `grim` for Wayland sessions.
  */
 
 struct Pixel
@@ -34,7 +35,7 @@ public:
   ScreenCapture();
   ~ScreenCapture();
 
-  // Initialize X11 connection and shared memory
+  // Initialize display connection
   bool init();
   void cleanup();
 
@@ -52,7 +53,16 @@ public:
   int get_screen_height() const;
   int get_bytes_per_line() const;
 
+  bool is_wayland() const;
+
 private:
+  bool is_wayland_;
+
+  // Generic buffer used for Wayland (grim outputs to /dev/shm)
+  std::vector<uint8_t> wayland_buffer_;
+  std::vector<uint8_t> wayland_rgb_buffer_;
+
+  // X11 properties
   Display* display_;
   Window   root_;
   int      screen_width_;
@@ -69,6 +79,8 @@ private:
 
   void free_shm();
   bool alloc_shm(int width, int height);
+
+  bool capture_region_wayland(int x, int y, int width, int height);
 };
 
 #endif /* CHESSY_NOT_CHEESY_SCREEN_CAPTURE_H */
