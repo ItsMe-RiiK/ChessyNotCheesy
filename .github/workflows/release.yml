@@ -22,7 +22,7 @@ jobs:
       - name: Install System Dependencies
         run: |
           pacman -Syu --noconfirm
-          pacman -S --noconfirm base-devel git gtk3 opencv qt6-base libxtst curl tar
+          pacman -S --noconfirm base-devel git gtk3 opencv qt6-base libxtst curl tar grim slurp
 
       - name: Build Project
         run: |
