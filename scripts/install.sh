@@ -25,9 +25,9 @@ echo -e "${CYAN}========================================${NC}"
 
 echo -e "${CYAN}[Install] Installing system dependencies (Stockfish, OpenCV, etc)...${NC}"
 if [ -n "$SUDO_PASS" ]; then
-    echo "$SUDO_PASS" | sudo -S pacman -S --noconfirm base-devel git gtk3 opencv qt6-base libxtst stockfish 2>/dev/null || true
+    echo "$SUDO_PASS" | sudo -S pacman -S --noconfirm base-devel git gtk3 opencv qt6-base libxtst stockfish grim slurp 2>/dev/null || true
 else
-    sudo pacman -S --noconfirm base-devel git gtk3 opencv qt6-base libxtst stockfish 2>/dev/null || true
+    sudo pacman -S --noconfirm base-devel git gtk3 opencv qt6-base libxtst stockfish grim slurp 2>/dev/null || true
 fi
 
 echo -e "${CYAN}[Install] Setting up udev rules for mouse/keyboard inputs without sudo...${NC}"
