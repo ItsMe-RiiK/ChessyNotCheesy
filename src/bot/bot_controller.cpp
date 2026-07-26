@@ -164,15 +164,9 @@ void BotController::set_playing_white(bool white)
   game_state_.set_playing_white(white);
 }
 
-void BotController::set_engine_threads(int threads)
-{
-  stockfish_.set_threads(threads);
-}
+void BotController::set_engine_threads(int threads) { stockfish_.set_threads(threads); }
 
-void BotController::set_engine_hash(int hash)
-{
-  stockfish_.set_hash(hash);
-}
+void BotController::set_engine_hash(int hash) { stockfish_.set_hash(hash); }
 
 void BotController::set_move_delay(int min_ms, int max_ms)
 {
@@ -273,8 +267,8 @@ void BotController::bot_loop()
       // Query Stockfish asynchronously so we can interrupt it if the user clicks Stop
       stockfish_.set_position(fen);
       std::future<std::string> future_move = stockfish_.get_best_move_async(stockfish_depth_);
-      std::string best_move;
-      
+      std::string              best_move;
+
       while (true) {
         // If user stopped the bot, interrupt Stockfish and wait for it to return
         if (should_stop_) {
@@ -282,7 +276,7 @@ void BotController::bot_loop()
           best_move = future_move.get();
           break;
         }
-        
+
         // Wait 100ms for Stockfish to finish. If it's ready, get the move and proceed.
         if (future_move.wait_for(std::chrono::milliseconds(100)) == std::future_status::ready) {
           best_move = future_move.get();

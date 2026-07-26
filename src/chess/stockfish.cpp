@@ -9,8 +9,8 @@
 #include <sys/prctl.h>
 #include <sys/wait.h>
 #include <thread>
-#include <vector>
 #include <unistd.h>
+#include <vector>
 
 StockfishEngine::StockfishEngine() :
     child_pid_(-1),
@@ -190,7 +190,7 @@ std::string StockfishEngine::wait_for(const std::string& prefix, int timeout_ms)
 
   while (true) {
     std::string line;
-    
+
     // First, try to get a full line from the buffer
     size_t pos = read_buffer_.find('\n');
     if (pos != std::string::npos) {
@@ -199,14 +199,19 @@ std::string StockfishEngine::wait_for(const std::string& prefix, int timeout_ms)
       if (!line.empty() && line.back() == '\r') {
         line.pop_back();
       }
-    } else {
+    }
+    else {
       // Buffer doesn't have a full line, wait for more data
       auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-                       std::chrono::steady_clock::now() - start).count();
-      if (elapsed >= timeout_ms) return "";
+                       std::chrono::steady_clock::now() - start
+      )
+                       .count();
+      if (elapsed >= timeout_ms)
+        return "";
 
       int remaining = timeout_ms - (int) elapsed;
-      if (remaining <= 0) return "";
+      if (remaining <= 0)
+        return "";
 
       struct pollfd pfd;
       pfd.fd      = from_engine_fd_;
@@ -214,17 +219,20 @@ std::string StockfishEngine::wait_for(const std::string& prefix, int timeout_ms)
       pfd.revents = 0;
 
       int ret = poll(&pfd, 1, remaining);
-      if (ret <= 0) return "";
+      if (ret <= 0)
+        return "";
 
       std::vector<char> buf(4096);
-      int res = read(from_engine_fd_, buf.data(), buf.size());
-      if (res <= 0) return "";
-      
+      int               res = read(from_engine_fd_, buf.data(), buf.size());
+      if (res <= 0)
+        return "";
+
       read_buffer_.append(buf.data(), res);
-      continue; // Go back to the top of the loop to check for \n again
+      continue;  // Go back to the top of the loop to check for \n again
     }
 
-    if (line.empty()) continue;
+    if (line.empty())
+      continue;
 
     // Capture engine identification ("id name Stockfish ...")
     if (line.size() > 8 && line.compare(0, 8, "id name ") == 0) {
@@ -265,10 +273,7 @@ std::future<std::string> StockfishEngine::get_best_move_async(int depth)
   return std::async(std::launch::async, [this, depth]() { return this->get_best_move(depth); });
 }
 
-void StockfishEngine::stop_search()
-{
-  send_command("stop");
-}
+void StockfishEngine::stop_search() { send_command("stop"); }
 
 std::string StockfishEngine::get_best_move(int depth)
 {

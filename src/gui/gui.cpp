@@ -213,7 +213,8 @@ static void on_calibrate_clicked(GtkWidget* widget, gpointer data)
         }
         pclose(f);
       }
-    } else {
+    }
+    else {
       calib_state = 1;
       if (calibrate_btn)
         gtk_button_set_label(GTK_BUTTON(calibrate_btn), "Click TOP-LEFT (a8)");
@@ -353,7 +354,8 @@ static void on_cpu_spin_changed(GtkSpinButton* spin, gpointer data)
   int skip = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(spin), "skip_next_status"));
   if (skip) {
     g_object_set_data(G_OBJECT(spin), "skip_next_status", GINT_TO_POINTER(0));
-  } else {
+  }
+  else {
     bot.set_status("Custom CPU Threads set to: " + std::to_string(threads));
   }
 }
@@ -373,7 +375,8 @@ static void on_memory_spin_changed(GtkSpinButton* spin, gpointer data)
   int skip = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(spin), "skip_next_status"));
   if (skip) {
     g_object_set_data(G_OBJECT(spin), "skip_next_status", GINT_TO_POINTER(0));
-  } else {
+  }
+  else {
     bot.set_status("Custom RAM Hash set to: " + std::to_string(hash) + " MB");
   }
 }
@@ -858,8 +861,10 @@ static void activate(GtkApplication* app, gpointer user_data)
   g_signal_connect(memory_spin, "activate", G_CALLBACK(on_spin_activate), NULL);
 
   int default_mem_idx = 0;
-  if (ram_mb > 2048) default_mem_idx = 2; // 1024 MB
-  else if (ram_mb > 1024) default_mem_idx = 1; // 512 MB
+  if (ram_mb > 2048)
+    default_mem_idx = 2;  // 1024 MB
+  else if (ram_mb > 1024)
+    default_mem_idx = 1;  // 512 MB
 
   g_signal_connect(memory_combo, "changed", G_CALLBACK(on_memory_changed), NULL);
   gtk_combo_box_set_active(GTK_COMBO_BOX(memory_combo), default_mem_idx);

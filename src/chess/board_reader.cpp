@@ -60,16 +60,13 @@ void BoardReader::calibrate(int top_left_x, int top_left_y, int bottom_right_x, 
   );
 }
 
-void BoardReader::set_playing_white(bool white) 
-{ 
-  playing_white_ = white; 
+void BoardReader::set_playing_white(bool white)
+{
+  playing_white_ = white;
   reset_cache();
 }
 
-void BoardReader::reset_cache()
-{
-  prev_screen_ = cv::Mat();
-}
+void BoardReader::reset_cache() { prev_screen_ = cv::Mat(); }
 bool BoardReader::is_playing_white() const { return playing_white_; }
 
 bool BoardReader::is_calibrated() const { return is_calibrated_; }
