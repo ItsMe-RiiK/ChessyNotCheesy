@@ -36,10 +36,34 @@ fi
 
 cd "$SCRIPT_DIR"
 
-if [ -n "$SUDO_PASS" ]; then
-    xhost +si:localuser:root >/dev/null 2>&1 || true
-    echo "$SUDO_PASS" | sudo -S --preserve-env=DISPLAY,XAUTHORITY,WAYLAND_DISPLAY,XDG_RUNTIME_DIR env GDK_BACKEND=x11 "$BIN" "$@"
+# Check if we have permission to read input devices and write to uinput
+HAS_PERMS=true
+
+# Check global hotkey read access
+for f in /dev/input/event*; do
+    if [ ! -r "$f" ]; then
+        HAS_PERMS=false
+        break
+    fi
+done
+
+# Check virtual mouse write access (uinput)
+if [ ! -w "/dev/uinput" ]; then
+    HAS_PERMS=false
+fi
+
+if [ "$HAS_PERMS" = true ]; then
+    # Run natively without sudo (Wayland friendly!)
+    env GDK_BACKEND=x11 "$BIN" "$@"
 else
-    xhost +si:localuser:root >/dev/null 2>&1 || true
-    sudo --preserve-env=DISPLAY,XAUTHORITY,WAYLAND_DISPLAY,XDG_RUNTIME_DIR env GDK_BACKEND=x11 "$BIN" "$@"
+    echo -e "${YELLOW}[ChessyNotCheesy] Insufficient permissions for hotkeys or uinput. Elevating to sudo...${NC}"
+    echo -e "${YELLOW}Tip: Run scripts/install.sh to configure udev rules and run without sudo!${NC}"
+    
+    if [ -n "$SUDO_PASS" ]; then
+        xhost +si:localuser:root >/dev/null 2>&1 || true
+        echo "$SUDO_PASS" | sudo -S --preserve-env=DISPLAY,XAUTHORITY,WAYLAND_DISPLAY,XDG_RUNTIME_DIR env GDK_BACKEND=x11 "$BIN" "$@"
+    else
+        xhost +si:localuser:root >/dev/null 2>&1 || true
+        sudo --preserve-env=DISPLAY,XAUTHORITY,WAYLAND_DISPLAY,XDG_RUNTIME_DIR env GDK_BACKEND=x11 "$BIN" "$@"
+    fi
 fi

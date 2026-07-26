@@ -33,14 +33,15 @@ if [ -f "$ALT_DESKTOP_FILE" ]; then
 fi
 
 UDEV_RULE_FILE="/etc/udev/rules.d/99-chessynotcheesy.rules"
+MODULES_LOAD_FILE="/etc/modules-load.d/uinput.conf"
 if [ -f "$UDEV_RULE_FILE" ]; then
     echo -e "${CYAN}[Uninstall] Removing udev rules for mouse/keyboard inputs...${NC}"
     if [ -n "$SUDO_PASS" ]; then
-        echo "$SUDO_PASS" | sudo -S rm -f "$UDEV_RULE_FILE"
+        echo "$SUDO_PASS" | sudo -S rm -f "$UDEV_RULE_FILE" "$MODULES_LOAD_FILE"
         echo "$SUDO_PASS" | sudo -S udevadm control --reload-rules
         echo "$SUDO_PASS" | sudo -S udevadm trigger
     else
-        sudo rm -f "$UDEV_RULE_FILE"
+        sudo rm -f "$UDEV_RULE_FILE" "$MODULES_LOAD_FILE"
         sudo udevadm control --reload-rules
         sudo udevadm trigger
     fi

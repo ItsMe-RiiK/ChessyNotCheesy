@@ -32,13 +32,20 @@ fi
 
 echo -e "${CYAN}[Install] Setting up udev rules for mouse/keyboard inputs without sudo...${NC}"
 UDEV_RULE_FILE="/etc/udev/rules.d/99-chessynotcheesy.rules"
-UDEV_RULE_CONTENT="SUBSYSTEM==\"input\", GROUP=\"input\", MODE=\"0666\""
+UDEV_RULE_CONTENT="SUBSYSTEM==\"input\", GROUP=\"input\", MODE=\"0666\"
+KERNEL==\"uinput\", SUBSYSTEM==\"misc\", GROUP=\"input\", MODE=\"0666\""
+MODULES_LOAD_FILE="/etc/modules-load.d/uinput.conf"
+
 if [ -n "$SUDO_PASS" ]; then
     echo "$SUDO_PASS" | sudo -S bash -c "echo '$UDEV_RULE_CONTENT' > $UDEV_RULE_FILE"
+    echo "$SUDO_PASS" | sudo -S bash -c "echo 'uinput' > $MODULES_LOAD_FILE"
+    echo "$SUDO_PASS" | sudo -S modprobe uinput 2>/dev/null || true
     echo "$SUDO_PASS" | sudo -S udevadm control --reload-rules
     echo "$SUDO_PASS" | sudo -S udevadm trigger
 else
     sudo bash -c "echo '$UDEV_RULE_CONTENT' > $UDEV_RULE_FILE"
+    sudo bash -c "echo 'uinput' > $MODULES_LOAD_FILE"
+    sudo modprobe uinput 2>/dev/null || true
     sudo udevadm control --reload-rules
     sudo udevadm trigger
 fi
