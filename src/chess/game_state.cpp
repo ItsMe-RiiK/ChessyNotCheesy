@@ -133,6 +133,20 @@ std::string GameState::detect_move(const Board& old_board, const Board& new_boar
   std::vector<std::pair<int, int>> filled;   // squares that became occupied or changed piece
   std::vector<std::pair<int, int>> changed;  // squares where piece color changed
 
+  auto check_promotion = [&](const std::string& move, int src_x, int src_y, int dst_x, int dst_y) -> std::string {
+    if (move.empty()) return move;
+    Piece p = old_board[src_y][src_x];
+    if ((p == Piece::WHITE_PAWN && dst_y == 0) || (p == Piece::BLACK_PAWN && dst_y == 7)) {
+       Piece promoted = new_board[dst_y][dst_x];
+       if (promoted == Piece::WHITE_QUEEN || promoted == Piece::BLACK_QUEEN) return move + "q";
+       if (promoted == Piece::WHITE_ROOK || promoted == Piece::BLACK_ROOK) return move + "r";
+       if (promoted == Piece::WHITE_BISHOP || promoted == Piece::BLACK_BISHOP) return move + "b";
+       if (promoted == Piece::WHITE_KNIGHT || promoted == Piece::BLACK_KNIGHT) return move + "n";
+       return move + "q"; // fallback to queen if unknown
+    }
+    return move;
+  };
+
   for (int r = 0; r < 8; r++) {
     for (int f = 0; f < 8; f++) {
       bool old_empty = (old_board[r][f] == Piece::EMPTY);
@@ -173,14 +187,16 @@ std::string GameState::detect_move(const Board& old_board, const Board& new_boar
 
   // Simple move: one square emptied, one filled
   if (emptied.size() == 1 && filled.size() == 1 && changed.empty()) {
-    return square_to_uci(emptied[0].first, emptied[0].second)
-         + square_to_uci(filled[0].first, filled[0].second);
+    return check_promotion(square_to_uci(emptied[0].first, emptied[0].second)
+         + square_to_uci(filled[0].first, filled[0].second), 
+         emptied[0].first, emptied[0].second, filled[0].first, filled[0].second);
   }
 
   // Capture: one emptied, one changed
   if (emptied.size() == 1 && filled.empty() && changed.size() == 1) {
-    return square_to_uci(emptied[0].first, emptied[0].second)
-         + square_to_uci(changed[0].first, changed[0].second);
+    return check_promotion(square_to_uci(emptied[0].first, emptied[0].second)
+         + square_to_uci(changed[0].first, changed[0].second),
+         emptied[0].first, emptied[0].second, changed[0].first, changed[0].second);
   }
 
   // Castling: (Full animation) two emptied (king + rook), two filled (king + rook new positions)
@@ -241,8 +257,9 @@ std::string GameState::detect_move(const Board& old_board, const Board& new_boar
     }
 
     auto& dest = !filled.empty() ? filled[0] : changed[0];
-    return square_to_uci(emptied[0].first, emptied[0].second)
-         + square_to_uci(dest.first, dest.second);
+    return check_promotion(square_to_uci(emptied[0].first, emptied[0].second)
+         + square_to_uci(dest.first, dest.second),
+         emptied[0].first, emptied[0].second, dest.first, dest.second);
   }
 
   return "";  // Could not detect move

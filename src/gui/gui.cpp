@@ -32,6 +32,10 @@ static GtkWidget* depth_scale;
 static GtkWidget* delay_min_spin;
 static GtkWidget* delay_max_spin;
 static GtkWidget* color_combo;
+static GtkWidget* cpu_combo;
+static GtkWidget* cpu_spin;
+static GtkWidget* memory_combo;
+static GtkWidget* memory_spin;
 
 // PGN view
 static GtkTextBuffer* pgn_buffer = nullptr;
@@ -194,29 +198,29 @@ static void on_toggle(GtkWidget* widget, gpointer data)
 
 static void on_calibrate_clicked(GtkWidget* widget, gpointer data)
 {
-  if (getenv("WAYLAND_DISPLAY")) {
-    bot.set_status("Drag a box over the chessboard using slurp...");
-    FILE* f = popen("slurp", "r");
-    if (f) {
-      char buf[256];
-      if (fgets(buf, sizeof(buf), f)) {
-        int x, y, w, h;
-        if (sscanf(buf, "%d,%d %dx%d", &x, &y, &w, &h) == 4) {
-          bot.calibrate(x, y, x + w, y + h);
-        }
-      }
-      pclose(f);
-    }
-    return;
-  }
-
   if (calib_state == 0) {
-    calib_state = 1;
-    if (calibrate_btn)
-      gtk_button_set_label(GTK_BUTTON(calibrate_btn), "Click TOP-LEFT (a8)");
-    gtk_label_set_text(
-      GTK_LABEL(status_label), "CALIBRATING: Click the TOP-LEFT corner of the board (a8 square)"
-    );
+    if (getenv("WAYLAND_DISPLAY")) {
+      bot.set_status("Drag a box over the chessboard using slurp...");
+      FILE* f = popen("slurp", "r");
+      if (f) {
+        char buf[256];
+        if (fgets(buf, sizeof(buf), f)) {
+          int x, y, w, h;
+          if (sscanf(buf, "%d,%d %dx%d", &x, &y, &w, &h) == 4) {
+            bot.calibrate(x, y, x + w, y + h);
+            calib_state = 3;
+          }
+        }
+        pclose(f);
+      }
+    } else {
+      calib_state = 1;
+      if (calibrate_btn)
+        gtk_button_set_label(GTK_BUTTON(calibrate_btn), "Click TOP-LEFT (a8)");
+      gtk_label_set_text(
+        GTK_LABEL(status_label), "CALIBRATING: Click the TOP-LEFT corner of the board (a8 square)"
+      );
+    }
   }
   else if (calib_state == 3) {
     calib_state = 4;
@@ -226,12 +230,8 @@ static void on_calibrate_clicked(GtkWidget* widget, gpointer data)
     );
   }
   else if (calib_state == 4) {
-    calib_state = 1;
-    if (calibrate_btn)
-      gtk_button_set_label(GTK_BUTTON(calibrate_btn), "Click TOP-LEFT (a8)");
-    gtk_label_set_text(
-      GTK_LABEL(status_label), "CALIBRATING: Click the TOP-LEFT corner of the board (a8 square)"
-    );
+    calib_state = 0;
+    on_calibrate_clicked(widget, data);
   }
 }
 
@@ -245,6 +245,137 @@ static void on_color_changed(GtkComboBox* combo, gpointer data)
 {
   int color_idx = gtk_combo_box_get_active(combo);
   bot.set_playing_white(color_idx == 0);
+}
+
+static gboolean clear_skip_flag(gpointer data)
+{
+  g_object_set_data(G_OBJECT(data), "skip_next_status", GINT_TO_POINTER(0));
+  return G_SOURCE_REMOVE;
+}
+
+static gint on_cpu_spin_input(GtkSpinButton* spin_button, gpointer new_value, gpointer data)
+{
+  const gchar* text    = gtk_entry_get_text(GTK_ENTRY(spin_button));
+  double       val     = g_ascii_strtod(text, NULL);
+  double       max_val = gtk_adjustment_get_upper(gtk_spin_button_get_adjustment(spin_button));
+  if (val > max_val) {
+    bot.set_status(
+      "Warning: CPU threads limited to maximum based on your computer's specs: "
+      + std::to_string((int) max_val) + " threads."
+    );
+    g_object_set_data(G_OBJECT(spin_button), "skip_next_status", GINT_TO_POINTER(1));
+    g_timeout_add(100, clear_skip_flag, spin_button);
+  }
+  return FALSE;
+}
+
+static gint on_memory_spin_input(GtkSpinButton* spin_button, gpointer new_value, gpointer data)
+{
+  const gchar* text    = gtk_entry_get_text(GTK_ENTRY(spin_button));
+  double       val     = g_ascii_strtod(text, NULL);
+  double       max_val = gtk_adjustment_get_upper(gtk_spin_button_get_adjustment(spin_button));
+  if (val > max_val) {
+    bot.set_status(
+      "Warning: RAM Hash limited to maximum based on your computer's specs (halved): "
+      + std::to_string((int) max_val) + " MB"
+    );
+    g_object_set_data(G_OBJECT(spin_button), "skip_next_status", GINT_TO_POINTER(1));
+    g_timeout_add(100, clear_skip_flag, spin_button);
+  }
+  return FALSE;
+}
+
+static void on_cpu_spin_changed(GtkSpinButton* spin, gpointer data);
+
+static void on_cpu_changed(GtkComboBox* combo, gpointer data)
+{
+  int active = gtk_combo_box_get_active(combo);
+  if (active == -1)
+    return;  // Ignore programmatic unselection
+
+  long num_procs = sysconf(_SC_NPROCESSORS_ONLN);
+
+  if (num_procs < 1) {
+    num_procs = 1;
+  }
+
+  int threads = 1;
+  if (active == 1 && num_procs > 1) {
+    threads = num_procs;
+  }
+
+  if (cpu_spin) {
+    g_signal_handlers_block_by_func(cpu_spin, (gpointer) on_cpu_spin_changed, NULL);
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(cpu_spin), threads);
+    g_signal_handlers_unblock_by_func(cpu_spin, (gpointer) on_cpu_spin_changed, NULL);
+  }
+  bot.set_engine_threads(threads);
+}
+
+static void on_memory_spin_changed(GtkSpinButton* spin, gpointer data);
+
+static void on_memory_changed(GtkComboBox* combo, gpointer data)
+{
+  int active = gtk_combo_box_get_active(combo);
+  if (active == -1)
+    return;  // Ignore programmatic unselection
+
+  int hash = 256;
+  if (active == 0)
+    hash = 256;
+  else if (active == 1)
+    hash = 512;
+  else if (active == 2)
+    hash = 1024;
+  else if (active == 3)
+    hash = 2048;
+
+  if (memory_spin) {
+    g_signal_handlers_block_by_func(memory_spin, (gpointer) on_memory_spin_changed, NULL);
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(memory_spin), hash);
+    g_signal_handlers_unblock_by_func(memory_spin, (gpointer) on_memory_spin_changed, NULL);
+  }
+  bot.set_engine_hash(hash);
+}
+
+static void on_cpu_spin_changed(GtkSpinButton* spin, gpointer data)
+{
+  int    threads = gtk_spin_button_get_value_as_int(spin);
+  double max_val = gtk_adjustment_get_upper(gtk_spin_button_get_adjustment(spin));
+  bot.set_engine_threads(threads);
+
+  if (cpu_combo) {
+    g_signal_handlers_block_by_func(cpu_combo, (gpointer) on_cpu_changed, NULL);
+    gtk_combo_box_set_active(GTK_COMBO_BOX(cpu_combo), -1);  // Unselect to show 'Custom'
+    g_signal_handlers_unblock_by_func(cpu_combo, (gpointer) on_cpu_changed, NULL);
+  }
+
+  int skip = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(spin), "skip_next_status"));
+  if (skip) {
+    g_object_set_data(G_OBJECT(spin), "skip_next_status", GINT_TO_POINTER(0));
+  } else {
+    bot.set_status("Custom CPU Threads set to: " + std::to_string(threads));
+  }
+}
+
+static void on_memory_spin_changed(GtkSpinButton* spin, gpointer data)
+{
+  int    hash    = gtk_spin_button_get_value_as_int(spin);
+  double max_val = gtk_adjustment_get_upper(gtk_spin_button_get_adjustment(spin));
+  bot.set_engine_hash(hash);
+
+  if (memory_combo) {
+    g_signal_handlers_block_by_func(memory_combo, (gpointer) on_memory_changed, NULL);
+    gtk_combo_box_set_active(GTK_COMBO_BOX(memory_combo), -1);  // Unselect to show 'Custom'
+    g_signal_handlers_unblock_by_func(memory_combo, (gpointer) on_memory_changed, NULL);
+  }
+
+  int skip = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(spin), "skip_next_status"));
+  if (skip) {
+    g_object_set_data(G_OBJECT(spin), "skip_next_status", GINT_TO_POINTER(0));
+  } else {
+    bot.set_status("Custom RAM Hash set to: " + std::to_string(hash) + " MB");
+  }
 }
 
 static void on_spin_activate(GtkWidget* widget, gpointer data)
@@ -668,6 +799,73 @@ static void activate(GtkApplication* app, gpointer user_data)
   gtk_widget_set_hexpand(depth_scale, TRUE);
   g_signal_connect(depth_scale, "value-changed", G_CALLBACK(on_depth_changed), NULL);
   gtk_box_pack_start(GTK_BOX(depth_hbox), depth_scale, TRUE, TRUE, 0);
+
+  // CPU Threads
+  GtkWidget* cpu_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+  gtk_box_pack_start(GTK_BOX(vbox), cpu_hbox, FALSE, FALSE, 0);
+  gtk_box_pack_start(GTK_BOX(cpu_hbox), create_label("CPU Threads:", NULL), FALSE, FALSE, 0);
+
+  cpu_combo = gtk_combo_box_text_new();
+  gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(cpu_combo), "Single Core");
+
+  long num_procs = sysconf(_SC_NPROCESSORS_ONLN);
+  if (num_procs < 1)
+    num_procs = 1;
+
+  if (num_procs > 1) {
+    std::string multi_text = "Multi-Core (" + std::to_string(num_procs) + " Cores)";
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(cpu_combo), multi_text.c_str());
+  }
+
+  // Create CPU Spin button first so combo box can set it
+  cpu_spin = gtk_spin_button_new_with_range(1, num_procs, 1);
+  g_signal_connect(cpu_spin, "value-changed", G_CALLBACK(on_cpu_spin_changed), NULL);
+  g_signal_connect(cpu_spin, "input", G_CALLBACK(on_cpu_spin_input), NULL);
+  g_signal_connect(cpu_spin, "activate", G_CALLBACK(on_spin_activate), NULL);
+
+  g_signal_connect(cpu_combo, "changed", G_CALLBACK(on_cpu_changed), NULL);
+  gtk_combo_box_set_active(GTK_COMBO_BOX(cpu_combo), 0);
+
+  gtk_box_pack_start(GTK_BOX(cpu_hbox), cpu_combo, FALSE, FALSE, 0);
+  gtk_box_pack_start(GTK_BOX(cpu_hbox), cpu_spin, TRUE, TRUE, 0);
+
+  // Memory Hash
+  GtkWidget* mem_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+  gtk_box_pack_start(GTK_BOX(vbox), mem_hbox, FALSE, FALSE, 0);
+  gtk_box_pack_start(GTK_BOX(mem_hbox), create_label("RAM Hash (MB):", NULL), FALSE, FALSE, 0);
+
+  memory_combo = gtk_combo_box_text_new();
+  gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(memory_combo), "256 MB");
+
+  long phys_pages = sysconf(_SC_PHYS_PAGES);
+  long page_size  = sysconf(_SC_PAGE_SIZE);
+  long ram_mb     = (phys_pages * page_size) / (1024 * 1024);
+  long max_safe_ram =
+    ram_mb / 2;  // Prevent allocating 100% of physical RAM, which triggers OOM Killer!
+  if (max_safe_ram < 256)
+    max_safe_ram = 256;
+
+  if (ram_mb > 1024)
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(memory_combo), "512 MB");
+  if (ram_mb > 2048)
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(memory_combo), "1024 MB");
+  if (ram_mb > 4096)
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(memory_combo), "2048 MB");
+
+  memory_spin = gtk_spin_button_new_with_range(16, max_safe_ram, 128);
+  g_signal_connect(memory_spin, "value-changed", G_CALLBACK(on_memory_spin_changed), NULL);
+  g_signal_connect(memory_spin, "input", G_CALLBACK(on_memory_spin_input), NULL);
+  g_signal_connect(memory_spin, "activate", G_CALLBACK(on_spin_activate), NULL);
+
+  int default_mem_idx = 0;
+  if (ram_mb > 2048) default_mem_idx = 2; // 1024 MB
+  else if (ram_mb > 1024) default_mem_idx = 1; // 512 MB
+
+  g_signal_connect(memory_combo, "changed", G_CALLBACK(on_memory_changed), NULL);
+  gtk_combo_box_set_active(GTK_COMBO_BOX(memory_combo), default_mem_idx);
+
+  gtk_box_pack_start(GTK_BOX(mem_hbox), memory_combo, FALSE, FALSE, 0);
+  gtk_box_pack_start(GTK_BOX(mem_hbox), memory_spin, TRUE, TRUE, 0);
 
   // Move delay
   GtkWidget* delay_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);

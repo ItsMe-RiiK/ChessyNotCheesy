@@ -45,7 +45,9 @@ public:
 
   // Configuration
   void set_playing_white(bool white);
-  void set_stockfish_depth(int depth);
+  void set_stockfish_depth(int depth) { stockfish_depth_ = depth; }
+  void set_engine_threads(int threads);
+  void set_engine_hash(int hash);
   void set_move_delay(int min_ms, int max_ms);
   void set_poll_interval_ms(int ms);
 

@@ -60,8 +60,16 @@ void BoardReader::calibrate(int top_left_x, int top_left_y, int bottom_right_x, 
   );
 }
 
-void BoardReader::set_playing_white(bool white) { playing_white_ = white; }
+void BoardReader::set_playing_white(bool white) 
+{ 
+  playing_white_ = white; 
+  reset_cache();
+}
 
+void BoardReader::reset_cache()
+{
+  prev_screen_ = cv::Mat();
+}
 bool BoardReader::is_playing_white() const { return playing_white_; }
 
 bool BoardReader::is_calibrated() const { return is_calibrated_; }
@@ -171,8 +179,8 @@ Board BoardReader::read_board()
         cv::absdiff(square, prev_screen_(roi), diff);
         cv::cvtColor(diff, diff, cv::COLOR_BGR2GRAY);
         int changed_pixels = cv::countNonZero(diff > 5);
-        // If less than 10 pixels changed, skip heavy template matching
-        if (changed_pixels < 10) {
+        // If less than 30 pixels changed, skip heavy template matching (reduces CPU usage from idle animations or screen noise)
+        if (changed_pixels < 30) {
           board[rank][file] = prev_board_[rank][file];
           continue;
         }

@@ -9,6 +9,7 @@
 #include <sys/prctl.h>
 #include <sys/wait.h>
 #include <thread>
+#include <vector>
 #include <unistd.h>
 
 StockfishEngine::StockfishEngine() :
@@ -183,58 +184,47 @@ bool StockfishEngine::send_command(const std::string& cmd)
   return true;
 }
 
-std::string StockfishEngine::read_line()
-{
-  if (from_engine_fd_ < 0)
-    return "";
-
-  std::string line;
-  char        c;
-  int         res;
-  while ((res = read(from_engine_fd_, &c, 1)) == 1) {
-    if (c == '\n')
-      break;
-    if (c != '\r')
-      line += c;
-  }
-  if (res <= 0 && line.empty())
-    return "<EOF>";
-  return line;
-}
-
 std::string StockfishEngine::wait_for(const std::string& prefix, int timeout_ms)
 {
   auto start = std::chrono::steady_clock::now();
 
   while (true) {
-    // Check timeout
-    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-                     std::chrono::steady_clock::now() - start
-    )
-                     .count();
-    if (elapsed >= timeout_ms)
-      return "";
+    std::string line;
+    
+    // First, try to get a full line from the buffer
+    size_t pos = read_buffer_.find('\n');
+    if (pos != std::string::npos) {
+      line = read_buffer_.substr(0, pos);
+      read_buffer_.erase(0, pos + 1);
+      if (!line.empty() && line.back() == '\r') {
+        line.pop_back();
+      }
+    } else {
+      // Buffer doesn't have a full line, wait for more data
+      auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                       std::chrono::steady_clock::now() - start).count();
+      if (elapsed >= timeout_ms) return "";
 
-    int remaining = timeout_ms - (int) elapsed;
-    if (remaining <= 0)
-      return "";
+      int remaining = timeout_ms - (int) elapsed;
+      if (remaining <= 0) return "";
 
-    // Poll for data availability
-    struct pollfd pfd;
-    pfd.fd     = from_engine_fd_;
-    pfd.events = POLLIN;
+      struct pollfd pfd;
+      pfd.fd      = from_engine_fd_;
+      pfd.events  = POLLIN;
+      pfd.revents = 0;
 
-    int ret = poll(&pfd, 1, remaining);
-    if (ret <= 0)
-      return "";
+      int ret = poll(&pfd, 1, remaining);
+      if (ret <= 0) return "";
 
-    std::string line = read_line();
+      std::vector<char> buf(4096);
+      int res = read(from_engine_fd_, buf.data(), buf.size());
+      if (res <= 0) return "";
+      
+      read_buffer_.append(buf.data(), res);
+      continue; // Go back to the top of the loop to check for \n again
+    }
 
-    if (line == "<EOF>")
-      return "";
-
-    if (line.empty())
-      continue;
+    if (line.empty()) continue;
 
     // Capture engine identification ("id name Stockfish ...")
     if (line.size() > 8 && line.compare(0, 8, "id name ") == 0) {
@@ -273,6 +263,11 @@ bool StockfishEngine::set_position(const std::string& fen)
 std::future<std::string> StockfishEngine::get_best_move_async(int depth)
 {
   return std::async(std::launch::async, [this, depth]() { return this->get_best_move(depth); });
+}
+
+void StockfishEngine::stop_search()
+{
+  send_command("stop");
 }
 
 std::string StockfishEngine::get_best_move(int depth)

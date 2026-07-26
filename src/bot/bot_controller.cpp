@@ -32,9 +32,9 @@ bool BotController::init()
 {
   set_status("Initializing...");
 
-  // Initialize screen capture (X11)
+  // Initialize screen capture (X11/Wayland)
   if (!capture_.init()) {
-    set_status("ERROR: Failed to init screen capture (X11)");
+    set_status("ERROR: Failed to init screen capture (X11/Wayland)");
     return false;
   }
 
@@ -50,9 +50,9 @@ bool BotController::init()
     return false;
   }
 
-  // Configure Stockfish for performance
-  stockfish_.set_threads(4);
-  stockfish_.set_hash(256);
+  // Configure Stockfish defaults (GUI will override these based on user selection)
+  stockfish_.set_threads(1);
+  stockfish_.set_hash(1024);
 
   // Load user's preferred themes since the GUI selectors were removed
   theme_manager_.load_board_theme("wood");
@@ -150,7 +150,11 @@ void BotController::calibrate(int tl_x, int tl_y, int br_x, int br_y)
   set_status("Board calibrated manually! Ready to start.");
 }
 
-void BotController::reset_game() { game_state_.reset(); }
+void BotController::reset_game()
+{
+  game_state_.reset();
+  board_reader_.reset_cache();
+}
 
 bool BotController::is_calibrated() const { return board_reader_.is_calibrated(); }
 
@@ -160,7 +164,15 @@ void BotController::set_playing_white(bool white)
   game_state_.set_playing_white(white);
 }
 
-void BotController::set_stockfish_depth(int depth) { stockfish_depth_ = depth; }
+void BotController::set_engine_threads(int threads)
+{
+  stockfish_.set_threads(threads);
+}
+
+void BotController::set_engine_hash(int hash)
+{
+  stockfish_.set_hash(hash);
+}
 
 void BotController::set_move_delay(int min_ms, int max_ms)
 {
@@ -258,9 +270,25 @@ void BotController::bot_loop()
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
       }
 
-      // Query Stockfish
+      // Query Stockfish asynchronously so we can interrupt it if the user clicks Stop
       stockfish_.set_position(fen);
-      std::string best_move = stockfish_.get_best_move(stockfish_depth_);
+      std::future<std::string> future_move = stockfish_.get_best_move_async(stockfish_depth_);
+      std::string best_move;
+      
+      while (true) {
+        // If user stopped the bot, interrupt Stockfish and wait for it to return
+        if (should_stop_) {
+          stockfish_.stop_search();
+          best_move = future_move.get();
+          break;
+        }
+        
+        // Wait 100ms for Stockfish to finish. If it's ready, get the move and proceed.
+        if (future_move.wait_for(std::chrono::milliseconds(100)) == std::future_status::ready) {
+          best_move = future_move.get();
+          break;
+        }
+      }
 
       if (best_move.empty() || best_move == "(none)") {
         set_status("No valid move found — game may be over.");
@@ -269,16 +297,16 @@ void BotController::bot_loop()
       }
 
       // Update eval display
-      int  score = stockfish_.get_last_score();
-      char eval_buf[64];
+      int score = stockfish_.get_last_score();
       if (std::abs(score) > 90000) {
-        int mate_in = 100000 - std::abs(score);
-        snprintf(eval_buf, sizeof(eval_buf), "Mate in %d", mate_in);
+        int mate_in  = 100000 - std::abs(score);
+        engine_eval_ = "Mate in " + std::to_string(mate_in);
       }
       else {
+        char eval_buf[64];
         snprintf(eval_buf, sizeof(eval_buf), "%+.2f", score / 100.0);
+        engine_eval_ = eval_buf;
       }
-      engine_eval_ = eval_buf;
 
       set_status("Playing: " + best_move + " (eval: " + engine_eval_ + ")");
 

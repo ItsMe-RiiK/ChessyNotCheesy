@@ -52,6 +52,9 @@ public:
   // Is calibrated?
   bool is_calibrated() const;
 
+  // Clear previous screen state to force a full re-read
+  void reset_cache();
+
   // Read the current board state from the screen using templates
   Board read_board();
 

@@ -32,6 +32,9 @@ public:
   // Returns move in UCI format (e.g., "e2e4", "e7e8q" for promotion)
   std::string get_best_move(int depth = 20);
 
+  // Stop the current search immediately and force engine to return bestmove
+  void stop_search();
+
   // Get best move at given depth asynchronously (non-blocking)
   std::future<std::string> get_best_move_async(int depth = 20);
 
@@ -58,12 +61,10 @@ private:
   std::string engine_path_;
   int         last_score_;
   std::string last_pv_;
+  std::string read_buffer_;
 
   // Send a command to the engine
   bool send_command(const std::string& cmd);
-
-  // Read a line from the engine (blocking)
-  std::string read_line();
 
   // Wait for a specific response prefix, return the full line
   std::string wait_for(const std::string& prefix, int timeout_ms = 10000);
