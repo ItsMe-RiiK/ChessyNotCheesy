@@ -13,7 +13,6 @@
 #undef True
 #undef False
 #include <cstdint>
-#include <string>
 #include <sys/shm.h>
 #include <vector>
 
