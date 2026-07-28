@@ -33,9 +33,7 @@ jobs:
       - name: Package Release
         run: |
           mkdir -p ChessyNotCheesy_build_tmp
-          cp -r release/ChessyNotCheesy images themes scripts bin launcher.sh README.md ChessyNotCheesy_build_tmp/
-          cp scripts/install.sh scripts/uninstall.sh scripts/update.sh ChessyNotCheesy_build_tmp/
-          rm -f ChessyNotCheesy_build_tmp/scripts/install.sh ChessyNotCheesy_build_tmp/scripts/uninstall.sh ChessyNotCheesy_build_tmp/scripts/update.sh
+          cp -r release images themes scripts launcher.sh README.md ChessyNotCheesy_build_tmp/
           mv ChessyNotCheesy_build_tmp ChessyNotCheesy
           tar -czvf ChessyNotCheesy-linux-x86_64.tar.gz ChessyNotCheesy
 
