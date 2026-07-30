@@ -1,7 +1,7 @@
 CXX := g++
 CXXFLAGS := -std=c++17 -O2 -Wall -Wextra -Wno-unused-parameter
 # Always build to local release folder
-RELEASE_DIR := release
+RELEASE_DIR := Release
 SRC_DIR := src
 BUILD_DIR := build
 TARGET := $(RELEASE_DIR)/ChessyNotCheesy
@@ -65,9 +65,9 @@ clean:
 
 run: $(TARGET)
 	@if [ -n "$(SUDO_PASS)" ]; then \
-		echo "$(SUDO_PASS)" | sudo -S --preserve-env=DISPLAY,XAUTHORITY,WAYLAND_DISPLAY,XDG_RUNTIME_DIR env GDK_BACKEND=x11 $(TARGET); \
+		echo "$(SUDO_PASS)" | sudo -S --preserve-env=DISPLAY,XAUTHORITY,WAYLAND_DISPLAY,XDG_RUNTIME_DIR $(TARGET); \
 	else \
-		sudo --preserve-env=DISPLAY,XAUTHORITY,WAYLAND_DISPLAY,XDG_RUNTIME_DIR env GDK_BACKEND=x11 $(TARGET); \
+		sudo --preserve-env=DISPLAY,XAUTHORITY,WAYLAND_DISPLAY,XDG_RUNTIME_DIR $(TARGET); \
 	fi
 
 test-stockfish: $(TARGET)
@@ -75,7 +75,7 @@ test-stockfish: $(TARGET)
 
 test-driver: $(TARGET)
 	@if [ -n "$(SUDO_PASS)" ]; then \
-		echo "$(SUDO_PASS)" | sudo -S --preserve-env=DISPLAY,XAUTHORITY,WAYLAND_DISPLAY,XDG_RUNTIME_DIR env GDK_BACKEND=x11 $(TARGET) --test-driver; \
+		echo "$(SUDO_PASS)" | sudo -S --preserve-env=DISPLAY,XAUTHORITY,WAYLAND_DISPLAY,XDG_RUNTIME_DIR $(TARGET) --test-driver; \
 	else \
-		sudo --preserve-env=DISPLAY,XAUTHORITY,WAYLAND_DISPLAY,XDG_RUNTIME_DIR env GDK_BACKEND=x11 $(TARGET) --test-driver; \
+		sudo --preserve-env=DISPLAY,XAUTHORITY,WAYLAND_DISPLAY,XDG_RUNTIME_DIR $(TARGET) --test-driver; \
 	fi
