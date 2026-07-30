@@ -1,7 +1,8 @@
 .vscode/
+.vs/
 
 build/
-release/
+Release/
 tests/
 debug/
 template/
