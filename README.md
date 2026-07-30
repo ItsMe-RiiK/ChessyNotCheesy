@@ -70,14 +70,14 @@ An automated script is provided to install all necessary dependencies and system
 <details>
 <summary><b>Option 1: Pre-compiled Releases (Recommended)</b></summary>
 
-Whenever a new version is released, an automated GitHub Action compiles it and packages it. You can download the latest `.tar.gz` archive directly from the [Releases page](https://github.com/ItsMe-RiiK/ChessyNotCheesy/releases).
+Whenever a new version is released, an automated GitHub Action compiles it and packages it. You can download the latest `.zip` archive directly from the [Releases page](https://github.com/ItsMe-RiiK/ChessyNotCheesy/releases).
 
-1. Download `ChessyNotCheesy-linux-x86_64.tar.gz`.
+1. Download `ChessyNotCheesy-linux-x86_64.zip`.
 2. Extract the archive.
 3. Run the installer script to set up dependencies, udev permissions (so the bot doesn't need `sudo`), and create a Desktop shortcut:
 ```bash
 cd ChessyNotCheesy
-./install.sh
+./scripts/install.sh
 ```
 4. You can now launch **ChessyNotCheesy** from your Desktop application menu
 </details>
@@ -112,10 +112,10 @@ make -j$(nproc)
 
 ---
 ## 🖥️ Application Scripts
-We provide convenient scripts to manage your installation (bundled in the root folder of releases, or in the `scripts/` folder if building from source):
+We provide convenient scripts to manage your installation (located in the `scripts/` folder):
 
 - **Install/Setup (`install.sh`)**: Installs Arch Linux dependencies, configures `udev` rules so the bot can listen to global hotkeys without requiring `sudo` on every launch, and creates a pure GUI desktop shortcut.
-- **Update (`update.sh`)**: Automatically fetches the latest `.tar.gz` release from GitHub, downloads it, extracts it, and overwrites your current installation seamlessly.
+- **Update (`update.sh`)**: Automatically fetches the latest `.zip` release from GitHub, downloads it, extracts it, and overwrites your current installation seamlessly.
 - **Uninstall (`uninstall.sh`)**: Removes the desktop shortcuts and cleans up the `udev` rules from your system.
 
 ---
