@@ -22,7 +22,7 @@ jobs:
       - name: Install System Dependencies
         run: |
           pacman -Syu --noconfirm
-          pacman -S --noconfirm base-devel git gtk3 opencv qt6-base libxtst curl tar grim slurp
+          pacman -S --noconfirm base-devel git gtk3 opencv qt6-base libxtst curl tar grim slurp zip
 
       - name: Build Project
         run: |
@@ -33,14 +33,14 @@ jobs:
       - name: Package Release
         run: |
           mkdir -p ChessyNotCheesy_build_tmp
-          cp -r release images themes scripts launcher.sh README.md ChessyNotCheesy_build_tmp/
+          cp -r Release images themes scripts launcher.sh README.md ChessyNotCheesy_build_tmp/
           mv ChessyNotCheesy_build_tmp ChessyNotCheesy
-          tar -czvf ChessyNotCheesy-linux-x86_64.tar.gz ChessyNotCheesy
+          zip -r ChessyNotCheesy-linux-x86_64.zip ChessyNotCheesy
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          files: ChessyNotCheesy-linux-x86_64.tar.gz
+          files: ChessyNotCheesy-linux-x86_64.zip
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

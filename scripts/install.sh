@@ -51,12 +51,9 @@ else
 fi
 echo -e "${GREEN}[Install] Permissions granted!${NC}"
 
-if [ ! -d "$DESKTOP_DIR" ]; then
-    echo -e "${YELLOW}[Install] Desktop directory not found at $DESKTOP_DIR. Using standard applications folder...${NC}"
-    DESKTOP_DIR="$HOME/.local/share/applications"
-    DESKTOP_FILE="$DESKTOP_DIR/ChessyNotCheesy.desktop"
-    mkdir -p "$DESKTOP_DIR"
-fi
+DESKTOP_DIR="$HOME/.local/share/applications"
+DESKTOP_FILE="$DESKTOP_DIR/ChessyNotCheesy.desktop"
+mkdir -p "$DESKTOP_DIR"
 
 echo -e "${CYAN}[Install] Installing application icon...${NC}"
 ICON_DIR="$HOME/.local/share/icons/hicolor/256x256/apps"
@@ -81,5 +78,5 @@ EOF
 chmod +x "$DESKTOP_FILE"
 gio set "$DESKTOP_FILE" metadata::trusted true 2>/dev/null || true
 
-echo -e "${GREEN}[Install] Done! You can now launch ChessyNotCheesy purely from the GUI.${NC}"
+echo -e "${GREEN}[Install] Done! You can now launch ChessyNotCheesy from the GUI.${NC}"
 exit 0

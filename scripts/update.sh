@@ -21,7 +21,7 @@ echo -e "${CYAN}  ChessyNotCheesy Updater${NC}"
 echo -e "${CYAN}========================================${NC}"
 
 REPO="ItsMe-RiiK/ChessyNotCheesy"
-LATEST_RELEASE_URL=$(curl -s https://api.github.com/repos/$REPO/releases/latest | grep "browser_download_url" | cut -d '"' -f 4 | grep 'tar.gz')
+LATEST_RELEASE_URL=$(curl -s https://api.github.com/repos/$REPO/releases/latest | grep "browser_download_url" | cut -d '"' -f 4 | grep 'zip')
 
 if [ -z "$LATEST_RELEASE_URL" ]; then
     echo -e "${RED}[Update] Failed to fetch latest release URL. Check your internet connection or rate limits.${NC}"
@@ -30,10 +30,10 @@ fi
 
 echo -e "${CYAN}[Update] Downloading latest release from $LATEST_RELEASE_URL...${NC}"
 TMP_DIR=$(mktemp -d)
-curl -L -o "$TMP_DIR/update.tar.gz" "$LATEST_RELEASE_URL"
+curl -L -o "$TMP_DIR/update.zip" "$LATEST_RELEASE_URL"
 
 echo -e "${CYAN}[Update] Extracting update...${NC}"
-tar -xzf "$TMP_DIR/update.tar.gz" -C "$TMP_DIR"
+unzip -q "$TMP_DIR/update.zip" -d "$TMP_DIR"
 
 # The tarball extracts a folder named ChessyNotCheesy. We need to copy its contents into the current directory.
 EXTRACTED_DIR="$TMP_DIR/ChessyNotCheesy"

@@ -7,8 +7,15 @@
 
 set -e
 
+if [ "$EUID" -eq 0 ]; then
+    echo -e "\033[0;31m[Error] Please do not run this script with sudo directly.\033[0m"
+    echo -e "\033[1;33mThe script will automatically request sudo with the correct environment variables if needed.\033[0m"
+    echo -e "\033[0;32mRun it normally: ./launcher.sh\033[0m"
+    exit 1
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BIN="$SCRIPT_DIR/release/ChessyNotCheesy"
+BIN="$SCRIPT_DIR/Release/ChessyNotCheesy"
 
 CYAN='\033[0;36m'
 GREEN='\033[0;32m'
@@ -54,16 +61,16 @@ fi
 
 if [ "$HAS_PERMS" = true ]; then
     # Run natively without sudo (Wayland friendly!)
-    env GDK_BACKEND=x11 "$BIN" "$@"
+    "$BIN" "$@"
 else
     echo -e "${YELLOW}[ChessyNotCheesy] Insufficient permissions for hotkeys or uinput. Elevating to sudo...${NC}"
     echo -e "${YELLOW}Tip: Run scripts/install.sh to configure udev rules and run without sudo!${NC}"
     
     if [ -n "$SUDO_PASS" ]; then
         xhost +si:localuser:root >/dev/null 2>&1 || true
-        echo "$SUDO_PASS" | sudo -S --preserve-env=DISPLAY,XAUTHORITY,WAYLAND_DISPLAY,XDG_RUNTIME_DIR env GDK_BACKEND=x11 "$BIN" "$@"
+        echo "$SUDO_PASS" | sudo -S --preserve-env=DISPLAY,XAUTHORITY,WAYLAND_DISPLAY,XDG_RUNTIME_DIR "$BIN" "$@"
     else
         xhost +si:localuser:root >/dev/null 2>&1 || true
-        sudo --preserve-env=DISPLAY,XAUTHORITY,WAYLAND_DISPLAY,XDG_RUNTIME_DIR env GDK_BACKEND=x11 "$BIN" "$@"
+        sudo --preserve-env=DISPLAY,XAUTHORITY,WAYLAND_DISPLAY,XDG_RUNTIME_DIR "$BIN" "$@"
     fi
 fi
