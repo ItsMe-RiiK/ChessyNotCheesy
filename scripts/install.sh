@@ -24,31 +24,24 @@ echo -e "${CYAN}  ChessyNotCheesy Installer${NC}"
 echo -e "${CYAN}========================================${NC}"
 
 echo -e "${CYAN}[Install] Installing system dependencies (Stockfish, OpenCV, etc)...${NC}"
-if [ -n "$SUDO_PASS" ]; then
-    echo "$SUDO_PASS" | sudo -S pacman -S --noconfirm base-devel git gtk3 opencv qt6-base libxtst stockfish grim slurp 2>/dev/null || true
-else
-    sudo pacman -S --noconfirm base-devel git gtk3 opencv qt6-base libxtst stockfish grim slurp 2>/dev/null || true
-fi
+sudo pacman -S --noconfirm base-devel git gtk3 opencv qt6-base libxtst stockfish grim slurp 2>/dev/null || true
 
 echo -e "${CYAN}[Install] Setting up udev rules for mouse/keyboard inputs without sudo...${NC}"
 UDEV_RULE_FILE="/etc/udev/rules.d/99-chessynotcheesy.rules"
-UDEV_RULE_CONTENT="SUBSYSTEM==\"input\", GROUP=\"input\", MODE=\"0666\"
-KERNEL==\"uinput\", SUBSYSTEM==\"misc\", GROUP=\"input\", MODE=\"0666\""
+UDEV_RULE_CONTENT="SUBSYSTEM==\"input\", GROUP=\"input\", MODE=\"0660\"
+KERNEL==\"uinput\", SUBSYSTEM==\"misc\", GROUP=\"input\", MODE=\"0660\""
 MODULES_LOAD_FILE="/etc/modules-load.d/uinput.conf"
 
-if [ -n "$SUDO_PASS" ]; then
-    echo "$SUDO_PASS" | sudo -S bash -c "echo '$UDEV_RULE_CONTENT' > $UDEV_RULE_FILE"
-    echo "$SUDO_PASS" | sudo -S bash -c "echo 'uinput' > $MODULES_LOAD_FILE"
-    echo "$SUDO_PASS" | sudo -S modprobe uinput 2>/dev/null || true
-    echo "$SUDO_PASS" | sudo -S udevadm control --reload-rules
-    echo "$SUDO_PASS" | sudo -S udevadm trigger
-else
-    sudo bash -c "echo '$UDEV_RULE_CONTENT' > $UDEV_RULE_FILE"
-    sudo bash -c "echo 'uinput' > $MODULES_LOAD_FILE"
-    sudo modprobe uinput 2>/dev/null || true
-    sudo udevadm control --reload-rules
-    sudo udevadm trigger
-fi
+sudo bash -c "echo '$UDEV_RULE_CONTENT' > $UDEV_RULE_FILE"
+sudo bash -c "echo 'uinput' > $MODULES_LOAD_FILE"
+sudo modprobe uinput 2>/dev/null || true
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+
+# Add the user to the input group so they can access the devices with 0660 permissions
+TARGET_USER=${SUDO_USER:-$USER}
+sudo usermod -aG input "$TARGET_USER"
+echo -e "${YELLOW}[Install] Note: You may need to log out and log back in for the 'input' group to take effect.${NC}"
 echo -e "${GREEN}[Install] Permissions granted!${NC}"
 
 DESKTOP_DIR="$HOME/.local/share/applications"

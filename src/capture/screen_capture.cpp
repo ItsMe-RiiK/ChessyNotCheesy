@@ -29,14 +29,13 @@ bool ScreenCapture::init()
     is_wayland_ = true;
 
     // Get screen dimensions using grim
-    system("grim -t ppm /dev/shm/chess_cap.ppm > /dev/null 2>&1");
-    FILE* f = fopen("/dev/shm/chess_cap.ppm", "rb");
+    FILE* f = popen("grim -t ppm - 2>/dev/null", "r");
     if (f) {
       char header[16];
       if (fgets(header, sizeof(header), f) && strncmp(header, "P6", 2) == 0) {
         fscanf(f, "%d %d\n", &screen_width_, &screen_height_);
       }
-      fclose(f);
+      pclose(f);
     }
 
     if (screen_width_ == 0)
@@ -73,7 +72,6 @@ void ScreenCapture::cleanup()
 {
   if (is_wayland_) {
     wayland_buffer_.clear();
-    remove("/dev/shm/chess_cap.ppm");
     return;
   }
 
@@ -122,7 +120,7 @@ bool ScreenCapture::alloc_shm(int width, int height)
     return false;
 
   shm_info_.shmid =
-    shmget(IPC_PRIVATE, ximage_->bytes_per_line * ximage_->height, IPC_CREAT | 0777);
+    shmget(IPC_PRIVATE, ximage_->bytes_per_line * ximage_->height, IPC_CREAT | 0600);
   if (shm_info_.shmid == -1)
     return false;
 
@@ -145,29 +143,26 @@ bool ScreenCapture::capture_region_wayland(int x, int y, int width, int height)
   if (x != last_x || y != last_y || width != last_w || height != last_h) {
     cached_cmd = "grim -g \"" + std::to_string(x) + "," + std::to_string(y) + " "
                + std::to_string(width) + "x" + std::to_string(height)
-               + "\" -t ppm /dev/shm/chess_cap.ppm > /dev/null 2>&1";
+               + "\" -t ppm - 2>/dev/null";
     last_x     = x;
     last_y     = y;
     last_w     = width;
     last_h     = height;
   }
 
-  if (system(cached_cmd.c_str()) != 0)
-    return false;
-
-  FILE* f = fopen("/dev/shm/chess_cap.ppm", "rb");
+  FILE* f = popen(cached_cmd.c_str(), "r");
   if (!f)
     return false;
 
   char header[16];
   if (!fgets(header, sizeof(header), f) || strncmp(header, "P6", 2) != 0) {
-    fclose(f);
+    pclose(f);
     return false;
   }
 
   int w, h, max_val;
   if (fscanf(f, "%d %d %d", &w, &h, &max_val) != 3) {
-    fclose(f);
+    pclose(f);
     return false;
   }
   fgetc(f);  // Consume exactly the single whitespace (usually \n) after max_val
@@ -175,8 +170,11 @@ bool ScreenCapture::capture_region_wayland(int x, int y, int width, int height)
   wayland_buffer_.resize(w * h * 4);
   wayland_rgb_buffer_.resize(w * h * 3);
 
-  fread(wayland_rgb_buffer_.data(), 1, wayland_rgb_buffer_.size(), f);
-  fclose(f);
+  size_t bytes_read = fread(wayland_rgb_buffer_.data(), 1, wayland_rgb_buffer_.size(), f);
+  pclose(f);
+
+  if (bytes_read < wayland_rgb_buffer_.size())
+    return false;
 
   // Convert RGB to BGRA
   const uint8_t* rgb  = wayland_rgb_buffer_.data();
