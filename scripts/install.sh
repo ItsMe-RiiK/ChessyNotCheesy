@@ -16,7 +16,13 @@ if [ "$(basename "$SCRIPT_DIR")" = "scripts" ]; then
     SCRIPT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 fi
 
-DESKTOP_DIR="$HOME/Desktop"
+if [ -n "$SUDO_USER" ]; then
+    TARGET_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+else
+    TARGET_HOME="$HOME"
+fi
+
+DESKTOP_DIR="$TARGET_HOME/Desktop"
 DESKTOP_FILE="$DESKTOP_DIR/ChessyNotCheesy.desktop"
 
 echo -e "${CYAN}========================================${NC}"
@@ -44,15 +50,15 @@ sudo usermod -aG input "$TARGET_USER"
 echo -e "${YELLOW}[Install] Note: You may need to log out and log back in for the 'input' group to take effect.${NC}"
 echo -e "${GREEN}[Install] Permissions granted!${NC}"
 
-DESKTOP_DIR="$HOME/.local/share/applications"
+DESKTOP_DIR="$TARGET_HOME/.local/share/applications"
 DESKTOP_FILE="$DESKTOP_DIR/ChessyNotCheesy.desktop"
 mkdir -p "$DESKTOP_DIR"
 
 echo -e "${CYAN}[Install] Installing application icon...${NC}"
-ICON_DIR="$HOME/.local/share/icons/hicolor/256x256/apps"
+ICON_DIR="$TARGET_HOME/.local/share/icons/hicolor/256x256/apps"
 mkdir -p "$ICON_DIR"
 cp "$SCRIPT_DIR/images/Icon_256.png" "$ICON_DIR/chessynotcheesy.png"
-gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" 2>/dev/null || true
+gtk-update-icon-cache -f -t "$TARGET_HOME/.local/share/icons/hicolor" 2>/dev/null || true
 
 echo -e "${GREEN}[Install] Creating desktop shortcut at $DESKTOP_FILE...${NC}"
 
@@ -64,7 +70,7 @@ Name=ChessyNotCheesy
 Comment=Autonomous computer-vision chess bot
 Exec=bash "$SCRIPT_DIR/launcher.sh"
 Icon=chessynotcheesy
-Terminal=false
+Terminal=true
 Categories=Game;BoardGame;
 EOF
 

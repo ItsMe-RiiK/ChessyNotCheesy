@@ -36,8 +36,9 @@ fi
 
 echo -e "${GREEN}[ChessyNotCheesy] Launching...${NC}"
 echo -e "${CYAN}========================================${NC}"
-
-
+if [ -f "$SCRIPT_DIR/.env" ]; then
+    source "$SCRIPT_DIR/.env"
+fi
 
 cd "$SCRIPT_DIR"
 
@@ -63,6 +64,11 @@ if [ "$HAS_PERMS" = true ]; then
 else
     echo -e "${YELLOW}[ChessyNotCheesy] Insufficient permissions for hotkeys or uinput. Elevating to sudo...${NC}"
     echo -e "${YELLOW}Tip: Run scripts/install.sh to configure udev rules and run without sudo!${NC}"
-    xhost +si:localuser:root >/dev/null 2>&1 || true
-    sudo --preserve-env=DISPLAY,XAUTHORITY,WAYLAND_DISPLAY,XDG_RUNTIME_DIR "$BIN" "$@"
+    if [ -n "$SUDO_PASS" ]; then
+        xhost +si:localuser:root >/dev/null 2>&1 || true
+        echo "$SUDO_PASS" | sudo -S --preserve-env=DISPLAY,XAUTHORITY,WAYLAND_DISPLAY,XDG_RUNTIME_DIR "$BIN" "$@"
+    else
+        xhost +si:localuser:root >/dev/null 2>&1 || true
+        sudo --preserve-env=DISPLAY,XAUTHORITY,WAYLAND_DISPLAY,XDG_RUNTIME_DIR "$BIN" "$@"
+    fi
 fi
