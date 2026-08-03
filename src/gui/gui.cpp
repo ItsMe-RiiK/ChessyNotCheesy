@@ -881,7 +881,7 @@ static void activate(GtkApplication* app, gpointer user_data)
   gtk_box_pack_start(GTK_BOX(delay_vbox), delay_hbox, FALSE, FALSE, 0);
 
   //                                           value, min, max, step, page_size, page_increment
-  GtkAdjustment* delay_min_adj = gtk_adjustment_new(1000.0, 50.0, 5000.0, 50.0, 100.0, 0.0);
+  GtkAdjustment* delay_min_adj = gtk_adjustment_new(0.0, 0.0, 10000.0, 50.0, 100.0, 0.0);
   delay_min_spin               = gtk_spin_button_new(delay_min_adj, 50.0, 0);
   g_signal_connect(delay_min_spin, "value-changed", G_CALLBACK(on_delay_changed), NULL);
   g_signal_connect(delay_min_spin, "activate", G_CALLBACK(on_spin_activate), NULL);
@@ -890,7 +890,7 @@ static void activate(GtkApplication* app, gpointer user_data)
   gtk_box_pack_start(GTK_BOX(delay_hbox), create_label("-", NULL), FALSE, FALSE, 0);
 
   //                                           value, min, max, step, page_size, page_increment
-  GtkAdjustment* delay_max_adj = gtk_adjustment_new(5000.0, 50.0, 5000.0, 50.0, 100.0, 0.0);
+  GtkAdjustment* delay_max_adj = gtk_adjustment_new(500.0, 0.0, 20000.0, 50.0, 100.0, 0.0);
   delay_max_spin               = gtk_spin_button_new(delay_max_adj, 50.0, 0);
   g_signal_connect(delay_max_spin, "value-changed", G_CALLBACK(on_delay_changed), NULL);
   g_signal_connect(delay_max_spin, "activate", G_CALLBACK(on_spin_activate), NULL);

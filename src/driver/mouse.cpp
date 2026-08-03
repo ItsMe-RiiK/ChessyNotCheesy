@@ -17,11 +17,11 @@ static std::mt19937& get_rng()
 
 VirtualMouse::VirtualMouse() :
     fd_(-1),
-    click_delay_min_ms_(30),
-    click_delay_max_ms_(80),
-    move_delay_min_ms_(5),
-    move_delay_max_ms_(15),
-    jitter_pixels_(2)
+    click_delay_min_ms_(0),
+    click_delay_max_ms_(0),
+    move_delay_min_ms_(0),
+    move_delay_max_ms_(0),
+    jitter_pixels_(10)
 {
 }
 
@@ -144,29 +144,28 @@ bool VirtualMouse::drag(int from_x, int from_y, int to_x, int to_y)
   if (!move_to(from_x, from_y))
     return false;
 
-  random_delay(50, 100);
+  random_delay(0, 0);
 
   if (!button_press(BTN_LEFT))
     return false;
 
-  random_delay(50, 80);
+  random_delay(0, 0);
 
   // Interpolate the movement
   int dx    = to_x - from_x;
   int dy    = to_y - from_y;
-  int steps = 20;
+  int steps = 2;
 
   for (int i = 1; i <= steps; ++i) {
     int cur_x = from_x + (dx * i) / steps;
     int cur_y = from_y + (dy * i) / steps;
 
     move_to(cur_x, cur_y);
-    std::this_thread::sleep_for(std::chrono::milliseconds(5));
   }
 
   // Ensure we reach the exact destination
   move_to(to_x, to_y);
-  random_delay(100, 150);
+  random_delay(0, 0);
 
   if (!button_release(BTN_LEFT))
     return false;

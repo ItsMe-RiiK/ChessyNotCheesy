@@ -15,8 +15,8 @@ BotController::BotController() :
     running_(false),
     should_stop_(false),
     stockfish_depth_(3),
-    move_delay_min_ms_(1000),
-    move_delay_max_ms_(5000),
+    move_delay_min_ms_(0),
+    move_delay_max_ms_(0),
     poll_interval_ms_(100),
     stable_frames_(0)
 {
@@ -322,9 +322,8 @@ void BotController::bot_loop()
       // Wait for our own move animation to finish completely before scanning the board again.
       // If we scan during our own animation, the vision system might track our piece mid-air,
       // which causes GameState to think the opponent moved our piece backwards!
-      // Reduced to 300ms to wake up faster and realize the opponent's move instantly,
-      // without needing to increase the overall CPU polling rate.
-      std::this_thread::sleep_for(std::chrono::milliseconds(300));
+      // Reduced to 10ms to wake up faster. Make sure piece animation is off in chess.com!
+      std::this_thread::sleep_for(std::chrono::milliseconds(150));
     }
 
     // 4. Sleep before next poll
@@ -365,7 +364,7 @@ bool BotController::execute_move(const std::string& uci_move)
 
   // Handle pawn promotion
   if (uci_move.size() == 5) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     click_promotion(uci_move[4]);
   }
 
