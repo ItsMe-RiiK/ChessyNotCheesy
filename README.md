@@ -90,21 +90,15 @@ cd ChessyNotCheesy
 git clone https://github.com/ItsMe-RiiK/ChessyNotCheesy.git
 cd ChessyNotCheesy
 ```
-2. **(Optional)** For automated dependency checks without manual password prompts, create a local `.env` file:
-```bash
-cp .env.example .env
-```
-*Edit `.env` and configure your `SUDO_PASS`.
-
-3. Run the installer to setup dependencies and udev permissions:
+2. Run the installer to setup dependencies and udev permissions:
 ```bash
 ./scripts/install.sh
 ```
-4. Compile the project:
+3. Compile the project:
 ```bash
 make -j$(nproc)
 ```
-5. Launch the bot:
+4. Launch the bot:
 ```bash
 ./launcher.sh
 ```
