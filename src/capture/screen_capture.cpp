@@ -142,8 +142,7 @@ bool ScreenCapture::capture_region_wayland(int x, int y, int width, int height)
 
   if (x != last_x || y != last_y || width != last_w || height != last_h) {
     cached_cmd = "grim -g \"" + std::to_string(x) + "," + std::to_string(y) + " "
-               + std::to_string(width) + "x" + std::to_string(height)
-               + "\" -t ppm - 2>/dev/null";
+               + std::to_string(width) + "x" + std::to_string(height) + "\" -t ppm - 2>/dev/null";
     last_x     = x;
     last_y     = y;
     last_w     = width;

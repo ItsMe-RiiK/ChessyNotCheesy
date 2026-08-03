@@ -144,28 +144,41 @@ bool VirtualMouse::drag(int from_x, int from_y, int to_x, int to_y)
   if (!move_to(from_x, from_y))
     return false;
 
-  random_delay(0, 0);
+  random_delay(20, 40);
 
   if (!button_press(BTN_LEFT))
     return false;
 
-  random_delay(0, 0);
+  random_delay(20, 40);
 
-  // Interpolate the movement
-  int dx    = to_x - from_x;
-  int dy    = to_y - from_y;
-  int steps = 2;
+  // Interpolate the movement with easing for human-like velocity
+  int dx = to_x - from_x;
+  int dy = to_y - from_y;
+
+  // Calculate distance to determine dynamic steps
+  double dist  = std::sqrt(dx * dx + dy * dy);
+  int    steps = std::max(15, std::min(45, (int) (dist / 10.0)));
 
   for (int i = 1; i <= steps; ++i) {
-    int cur_x = from_x + (dx * i) / steps;
-    int cur_y = from_y + (dy * i) / steps;
+    double t = (double) i / steps;
+    // Cubic ease-in-out
+    double ease_t = t < 0.5 ? 4 * t * t * t : 1 - std::pow(-2 * t + 2, 3) / 2;
+
+    int cur_x = from_x + (dx * ease_t);
+    int cur_y = from_y + (dy * ease_t);
 
     move_to(cur_x, cur_y);
+    std::this_thread::sleep_for(std::chrono::milliseconds(random_range(2, 5)));
   }
 
   // Ensure we reach the exact destination
+  // temporarily disable jitter for final pinpoint accuracy
+  int old_jitter = jitter_pixels_;
+  jitter_pixels_ = 0;
   move_to(to_x, to_y);
-  random_delay(0, 0);
+  jitter_pixels_ = old_jitter;
+
+  random_delay(20, 50);
 
   if (!button_release(BTN_LEFT))
     return false;
