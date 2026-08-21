@@ -10,9 +10,5 @@ template/
 *.o
 *.desktop
 
-chesscom.md
 compile_commands.json
 .env
-compile_flags.txt
-
-note.txt
