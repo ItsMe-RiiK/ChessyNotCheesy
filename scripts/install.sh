@@ -51,13 +51,13 @@ echo -e "${YELLOW}[Install] Note: You may need to log out and log back in for th
 echo -e "${GREEN}[Install] Permissions granted!${NC}"
 
 DESKTOP_DIR="$TARGET_HOME/.local/share/applications"
-DESKTOP_FILE="$DESKTOP_DIR/ChessyNotCheesy.desktop"
+DESKTOP_FILE="$DESKTOP_DIR/org.riik.ChessyNotCheesy.desktop"
 mkdir -p "$DESKTOP_DIR"
 
 echo -e "${CYAN}[Install] Installing application icon...${NC}"
 ICON_DIR="$TARGET_HOME/.local/share/icons/hicolor/256x256/apps"
 mkdir -p "$ICON_DIR"
-cp "$SCRIPT_DIR/images/Icon_256.png" "$ICON_DIR/chessynotcheesy.png"
+cp "$SCRIPT_DIR/images/Icon_256.png" "$ICON_DIR/org.riik.ChessyNotCheesy.png"
 gtk-update-icon-cache -f -t "$TARGET_HOME/.local/share/icons/hicolor" 2>/dev/null || true
 
 echo -e "${GREEN}[Install] Creating desktop shortcut at $DESKTOP_FILE...${NC}"
@@ -69,8 +69,9 @@ Type=Application
 Name=ChessyNotCheesy
 Comment=Autonomous computer-vision chess bot
 Exec=bash "$SCRIPT_DIR/launcher.sh"
-Icon=chessynotcheesy
+Icon=org.riik.ChessyNotCheesy
 Terminal=true
+StartupWMClass=org.riik.ChessyNotCheesy
 Categories=Game;BoardGame;
 EOF
 

@@ -15,8 +15,8 @@ if [ "$(basename "$SCRIPT_DIR")" = "scripts" ]; then
 fi
 
 DESKTOP_DIR="$HOME/Desktop"
-DESKTOP_FILE="$DESKTOP_DIR/ChessyNotCheesy.desktop"
-ALT_DESKTOP_FILE="$HOME/.local/share/applications/ChessyNotCheesy.desktop"
+DESKTOP_FILE="$DESKTOP_DIR/org.riik.ChessyNotCheesy.desktop"
+ALT_DESKTOP_FILE="$HOME/.local/share/applications/org.riik.ChessyNotCheesy.desktop"
 
 echo -e "${CYAN}========================================${NC}"
 echo -e "${CYAN}  ChessyNotCheesy Uninstaller${NC}"
@@ -48,7 +48,7 @@ if [ -f "$UDEV_RULE_FILE" ]; then
     echo -e "${GREEN}[Uninstall] udev rules removed.${NC}"
 fi
 
-ICON_FILE="$HOME/.local/share/icons/hicolor/256x256/apps/chessynotcheesy.png"
+ICON_FILE="$HOME/.local/share/icons/hicolor/256x256/apps/org.riik.ChessyNotCheesy.png"
 if [ -f "$ICON_FILE" ]; then
     echo -e "${CYAN}[Uninstall] Removing application icon...${NC}"
     rm -f "$ICON_FILE"
