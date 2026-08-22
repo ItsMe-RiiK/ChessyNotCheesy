@@ -14,7 +14,7 @@ BotController::BotController() :
     board_reader_(capture_, theme_manager_),
     running_(false),
     should_stop_(false),
-    stockfish_depth_(3),
+    stockfish_depth_(2),
     move_delay_min_ms_(0),
     move_delay_max_ms_(0),
     poll_interval_ms_(100),
