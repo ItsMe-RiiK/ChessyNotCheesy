@@ -38,7 +38,7 @@ jobs:
           zip -r ChessyNotCheesy-linux-x86_64.zip ChessyNotCheesy
 
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           files: ChessyNotCheesy-linux-x86_64.zip
           generate_release_notes: true
