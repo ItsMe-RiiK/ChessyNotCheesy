@@ -441,8 +441,9 @@ static void input_listener_thread()
   }
 
   struct epoll_event events[10];
-  bool               shift_pressed = false;
-  bool               ctrl_pressed  = false;
+  bool               left_shift_pressed = false;
+  bool               shift_pressed      = false;
+  bool               ctrl_pressed       = false;
 
   while (true) {
     int n = epoll_wait(epfd, events, 10, -1);
@@ -453,6 +454,8 @@ static void input_listener_thread()
           continue;
 
         if (ev.type == EV_KEY) {
+          if (ev.code == KEY_LEFTSHIFT)
+            left_shift_pressed = (ev.value != 0);
           if (ev.code == KEY_LEFTSHIFT || ev.code == KEY_RIGHTSHIFT)
             shift_pressed = (ev.value != 0);
           if (ev.code == KEY_LEFTCTRL || ev.code == KEY_RIGHTCTRL)
@@ -461,15 +464,15 @@ static void input_listener_thread()
           if (ev.value == 1 || ev.value == 2)  // pressed or repeat
           {
             if (ev.code == KEY_EQUAL || ev.code == KEY_KPPLUS) {
-              if (shift_pressed && !ctrl_pressed)
+              if (left_shift_pressed && !ctrl_pressed)
                 g_idle_add(adjust_delay_idle, (gpointer) (intptr_t) 1);
-              else if (ctrl_pressed && !shift_pressed)
+              else if (ctrl_pressed && shift_pressed)
                 g_idle_add(adjust_delay_idle, (gpointer) (intptr_t) 2);
             }
             else if (ev.code == KEY_MINUS || ev.code == KEY_KPMINUS) {
-              if (shift_pressed && !ctrl_pressed)
+              if (left_shift_pressed && !ctrl_pressed)
                 g_idle_add(adjust_delay_idle, (gpointer) (intptr_t) -1);
-              else if (ctrl_pressed && !shift_pressed)
+              else if (ctrl_pressed && shift_pressed)
                 g_idle_add(adjust_delay_idle, (gpointer) (intptr_t) -2);
             }
           }
@@ -732,6 +735,7 @@ static void activate(GtkApplication* app, gpointer user_data)
   );
 
   // Set the application icon
+  gtk_window_set_icon_name(GTK_WINDOW(window), "org.riik.ChessyNotCheesy");
   GError* error = NULL;
   if (!gtk_window_set_icon_from_file(GTK_WINDOW(window), "images/Icon_256.png", &error)) {
     fprintf(stderr, "[GUI] Warning: Could not load icon: %s\n", error->message);
