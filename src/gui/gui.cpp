@@ -341,8 +341,7 @@ static void on_memory_changed(GtkComboBox* combo, gpointer data)
 
 static void on_cpu_spin_changed(GtkSpinButton* spin, gpointer data)
 {
-  int    threads = gtk_spin_button_get_value_as_int(spin);
-  double max_val = gtk_adjustment_get_upper(gtk_spin_button_get_adjustment(spin));
+  int threads = gtk_spin_button_get_value_as_int(spin);
   bot.set_engine_threads(threads);
 
   if (cpu_combo) {
@@ -362,8 +361,7 @@ static void on_cpu_spin_changed(GtkSpinButton* spin, gpointer data)
 
 static void on_memory_spin_changed(GtkSpinButton* spin, gpointer data)
 {
-  int    hash    = gtk_spin_button_get_value_as_int(spin);
-  double max_val = gtk_adjustment_get_upper(gtk_spin_button_get_adjustment(spin));
+  int hash = gtk_spin_button_get_value_as_int(spin);
   bot.set_engine_hash(hash);
 
   if (memory_combo) {
@@ -443,8 +441,8 @@ static void input_listener_thread()
   }
 
   struct epoll_event events[10];
-  bool               left_shift_pressed  = false;
-  bool               right_shift_pressed = false;
+  bool               shift_pressed = false;
+  bool               ctrl_pressed  = false;
 
   while (true) {
     int n = epoll_wait(epfd, events, 10, -1);
@@ -455,23 +453,23 @@ static void input_listener_thread()
           continue;
 
         if (ev.type == EV_KEY) {
-          if (ev.code == KEY_LEFTSHIFT)
-            left_shift_pressed = (ev.value != 0);
-          if (ev.code == KEY_RIGHTSHIFT)
-            right_shift_pressed = (ev.value != 0);
+          if (ev.code == KEY_LEFTSHIFT || ev.code == KEY_RIGHTSHIFT)
+            shift_pressed = (ev.value != 0);
+          if (ev.code == KEY_LEFTCTRL || ev.code == KEY_RIGHTCTRL)
+            ctrl_pressed = (ev.value != 0);
 
           if (ev.value == 1 || ev.value == 2)  // pressed or repeat
           {
             if (ev.code == KEY_EQUAL || ev.code == KEY_KPPLUS) {
-              if (left_shift_pressed)
+              if (shift_pressed && !ctrl_pressed)
                 g_idle_add(adjust_delay_idle, (gpointer) (intptr_t) 1);
-              if (right_shift_pressed)
+              else if (ctrl_pressed && !shift_pressed)
                 g_idle_add(adjust_delay_idle, (gpointer) (intptr_t) 2);
             }
             else if (ev.code == KEY_MINUS || ev.code == KEY_KPMINUS) {
-              if (left_shift_pressed)
+              if (shift_pressed && !ctrl_pressed)
                 g_idle_add(adjust_delay_idle, (gpointer) (intptr_t) -1);
-              if (right_shift_pressed)
+              else if (ctrl_pressed && !shift_pressed)
                 g_idle_add(adjust_delay_idle, (gpointer) (intptr_t) -2);
             }
           }
@@ -795,7 +793,7 @@ static void activate(GtkApplication* app, gpointer user_data)
   gtk_box_pack_start(GTK_BOX(depth_hbox), create_label("Depth:", NULL), FALSE, FALSE, 0);
 
   //                                           depth, min, max, step, page_size, page_increment
-  GtkAdjustment* depth_adj = gtk_adjustment_new(3.0, 1.0, 30.0, 1.0, 5.0, 0.0);
+  GtkAdjustment* depth_adj = gtk_adjustment_new(2.0, 1.0, 30.0, 1.0, 5.0, 0.0);
   depth_scale              = gtk_scale_new(GTK_ORIENTATION_HORIZONTAL, depth_adj);
   gtk_scale_set_digits(GTK_SCALE(depth_scale), 0);
   gtk_scale_set_value_pos(GTK_SCALE(depth_scale), GTK_POS_RIGHT);
